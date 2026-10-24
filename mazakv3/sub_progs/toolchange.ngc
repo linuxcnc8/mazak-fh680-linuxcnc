@@ -1,10 +1,12 @@
 ; M6 remap - [RS274NGC] REMAP=M6 modalgroup=6 ngc=toolchange
 ; Mazak FH680 (horizontal, Y is vertical).
 ;
-;  1  spindle off, then M19 R0: orient and lock the spindle at the
-;     toolchange angle (ORIENT_OFFSET in the ini).  Faults if it can't.
+;  1  spindle off (M5 doesn't wait - it coasts down during step 2)
 ;  2  Z to the toolchange position, then Y to the toolchange height,
 ;     both in machine coordinates.
+;  2a M19 R0: orient and lock the spindle at the toolchange angle
+;     (ORIENT_OFFSET in the ini).  Faults if it can't.  Done AFTER the moves
+;     since 2026-10-25 so the coast-down overlaps them (was M5, M19, moves).
 ;  2b wait (M66 on motion.digital-in-14) for the magazine's pot - see below
 ;  3  M6 inside its own remap runs the built-in change: iocontrol ->
 ;     atc comp.  The atc refuses to move unless the spindle is held and
@@ -20,13 +22,20 @@ o<toolchange> sub
   o90 if [#<_hal[atc.0.fault]> GT 0]
     (abort, ATC fault - fix it and reset. If a change was interrupted check the tool table)
   o90 endif
+  ; refuse while ATC manual mode is on, or the arm was left away from rest
+  o91 if [#<_hal[atc.0.manual-mode]> GT 0]
+    (abort, ATC manual mode is on - untick it first)
+  o91 endif
+  o92 if [[ABS[#<_hal[atc.0.atc-in-position]>] GT 0.05] AND [ABS[#<_hal[atc.0.atc-in-position]> - 500] GT 0.05]]
+    (abort, ATC arm not at rest 0 or 500 - jog it home in ATC manual mode)
+  o92 endif
   o100 if [#<_selected_tool> EQ #<_current_tool>]
     ; same tool already in the spindle - nothing to swap
   o100 else
     M5
-    M19 R0 Q20
     G53 G0 Z#<_ini[ATC]TC_Z>
     G53 G0 Y#<_ini[ATC]TC_Y>
+    M19 R0 Q20
     ; wait HERE for the magazine to have the right pot at the change
     ; position (mag.0.tool-prepared -> motion.digital-in-14), before the
     ; built-in M6 starts the iocontrol tool-change handshake.  LinuxCNC

@@ -59,17 +59,17 @@ FUNCTION(_) {
 	
 	if ((pallet_up_sens && pallet_middle_sens) || 
 		(!pallet_up_sens && !pallet_middle_sens && pallet_top_sens)) {
-		pos1_sens = 1;
+		pos1_sens_set(1);
 	}
 	else {
-		pos1_sens = 0;
+		pos1_sens_set(0);
 	}
 	
 	if ((pallet_up_sens && pallet_top_sens) || (!pallet_up_sens && pallet_bottom_sens)) {
-		pos2_sens = 1;
+		pos2_sens_set(1);
 	}
 	else {
-		pos2_sens = 0;
+		pos2_sens_set(0);
 	}
 	
 	
@@ -80,13 +80,13 @@ FUNCTION(_) {
 	
 	switch(state) {
 		case 0:
-			default_bit = 0;
-			out160 = 0;
-			out0 = 1;
+			default_bit_set(0);
+			out160_set(0);
+			out0_set(1);
 			
 			if (pallet_change_command && !pallet_up_sens && 
 				!arms_toPallet_sens && arms_toHome_sens) {
-				arms_toPallet = 1;
+				arms_toPallet_set(1);
 				
 				if (!debug) {
 					state = 10;
@@ -98,10 +98,10 @@ FUNCTION(_) {
 			break;
 			
 		case 10: 	
-			out0 = 0;
-			out10 = 1;
+			out0_set(0);
+			out10_set(1);
 			if (!pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
-				arms_up = 1;
+				arms_up_set(1);
 				if (!debug) {
 					state = 20;
 				}
@@ -112,8 +112,8 @@ FUNCTION(_) {
 			break;
 			
 		case 20: 
-			out10 = 0;
-			out20 = 1;
+			out10_set(0);
+			out20_set(1);
 			if (pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
 	
 				if (!debug) {
@@ -127,8 +127,8 @@ FUNCTION(_) {
 			break;
 			
 		case 30:
-			out20 = 0;
-			out30 = 1;
+			out20_set(0);
+			out30_set(1);
 			if (pos1_sens && !pos2_sens) {
 				if (!debug || state_control == 40) {
 					state = 40;
@@ -142,32 +142,32 @@ FUNCTION(_) {
 			break;
 		
 		case 40:
-			out30 = 0;
-			out40 = 1;
+			out30_set(0);
+			out40_set(1);
 			
-			pallet_encoder_reset = 1;
-			pallet_ccw = 0;
-			pallet_cw = 1;	// Move Pallet clockwise
+			pallet_encoder_reset_set(1);
+			pallet_ccw_set(0);
+			pallet_cw_set(1);	// Move Pallet clockwise
 			
 			state = 45;
 			break;
 			
 		case 45: 
-			out40 = 0;
-			out45 = 1;
+			out40_set(0);
+			out45_set(1);
 			
-			pallet_encoder_reset = 0;
+			pallet_encoder_reset_set(0);
 			state = 50;
 			break;
 			
 		case 50:
-			out45 = 0;
-			out50 = 1;
+			out45_set(0);
+			out50_set(1);
 			
 			if (!pos1_sens && pos2_sens) {
-				pallet_cw = 0;
-				pallet_encoder_reset = 1;
-				timer_start = 1;
+				pallet_cw_set(0);
+				pallet_encoder_reset_set(1);
+				timer_start_set(1);
 				
 				if (!debug) {
 					state = 60;
@@ -180,15 +180,15 @@ FUNCTION(_) {
 			break;
 		
 		case 60:
-			out50 = 0;
-			out60 = 1;
+			out50_set(0);
+			out60_set(1);
 			
-			pallet_encoder_reset = 0;
+			pallet_encoder_reset_set(0);
 			
 			if (timer_finish) {
-			    timer_start = 0;
-				pallet_ccw = 0;
-				pallet_cw = 1;
+			    timer_start_set(0);
+				pallet_ccw_set(0);
+				pallet_cw_set(1);
 				
 				state = 70;
 			}
@@ -196,11 +196,11 @@ FUNCTION(_) {
 			break;
 			
 		case 70:
-			out60 = 0;
-			out70 = 1;
+			out60_set(0);
+			out70_set(1);
 			if (pallet_encoder_position >= 22000) {
 				// Pallet encoder position was determined through trial and error
-				pallet_cw = 0;
+				pallet_cw_set(0);
 				
 				if(!debug) {
 					state = 150;
@@ -213,32 +213,32 @@ FUNCTION(_) {
 			break;
 			
 		case 100:
-			out30 = 0;
-			out100 = 1;
+			out30_set(0);
+			out100_set(1);
 			
-			pallet_encoder_reset = 1;
-			pallet_cw = 0;
-			pallet_ccw = 1;	// Move Pallet Counter clockwise
+			pallet_encoder_reset_set(1);
+			pallet_cw_set(0);
+			pallet_ccw_set(1);	// Move Pallet Counter clockwise
 			
 			state = 105;			
 			break;
 			
 		case 105:
-			out100 = 0;
-			out105 = 1;
+			out100_set(0);
+			out105_set(1);
 			
-			pallet_encoder_reset = 0;
+			pallet_encoder_reset_set(0);
 			state = 110;
 			break;
 			
 		case 110:
-			out105 = 0;
-			out110 = 1;
+			out105_set(0);
+			out110_set(1);
 			
 			if (pos1_sens && !pos2_sens) {
-				pallet_ccw = 0;
-				pallet_encoder_reset = 1;
-				timer_start = 1;
+				pallet_ccw_set(0);
+				pallet_encoder_reset_set(1);
+				timer_start_set(1);
 				
 				if (!debug) {
 					state = 120;
@@ -252,25 +252,25 @@ FUNCTION(_) {
 			break;
 		
 		case 120:
-			out110 = 0;
-			out120 = 1;
+			out110_set(0);
+			out120_set(1);
 			
-			pallet_encoder_reset = 0;
+			pallet_encoder_reset_set(0);
 			
 			if (timer_finish) {	
-				timer_start = 0;
-				pallet_cw = 0;
-				pallet_ccw = 1;
+				timer_start_set(0);
+				pallet_cw_set(0);
+				pallet_ccw_set(1);
 				state = 130;
 			}
 			break;
 			
 		case 130:
-			out120 = 0;
-			out130 = 1;
+			out120_set(0);
+			out130_set(1);
 			if (pallet_encoder_position >= 17000) {
 				// Pallet encoder position was determined through trial and error
-				pallet_ccw = 0;
+				pallet_ccw_set(0);
 				
 				if (!debug) {
 					state = 150;
@@ -283,12 +283,12 @@ FUNCTION(_) {
 			break;
 			
 		case 150:
-			out70 = 0;
-			out130 = 0;
-			out150 = 1;
+			out70_set(0);
+			out130_set(0);
+			out150_set(1);
 			if (pallet_up_sens && 
 				arms_toPallet_sens && !arms_toHome_sens) {
-				arms_up = 0;
+				arms_up_set(0);
 				
 				if (!debug) {
 					state = 160;
@@ -300,10 +300,10 @@ FUNCTION(_) {
 			break;
 			
 		case 160:
-			out150 = 0;
-			out160 = 1;
+			out150_set(0);
+			out160_set(1);
 			if (!pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
-				arms_toPallet = 0;
+				arms_toPallet_set(0);
 				
 				if (!debug) {
 					state = 0;
@@ -315,7 +315,7 @@ FUNCTION(_) {
 			break;
 		
 		default:
-			default_bit = 1;
+			default_bit_set(1);
 	}
 }
 

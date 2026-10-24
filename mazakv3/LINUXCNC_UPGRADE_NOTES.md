@@ -63,7 +63,18 @@ fetching, then run again and switch to Manual. Neither should hang.
 ## 2. Recompile the custom comps
 
 The pre2 sources have HAL API changes, so rebuild every custom comp against
-the new headers (LinuxCNC closed):
+the new headers (LinuxCNC closed).
+
+**pre2 comps can't assign to pins or params any more.** `pin = x;` fails with
+"lvalue required as left operand of assignment". Writes must be `pin_set(x);`
+(reads are unchanged). The five comps were ported on 2026-10-25 by
+`pending-pre2comps/conv.py`. `rev.py` turns them back and checks the result
+is identical to the pre1 source. `pending-pre2comps/orig/` holds the pre1
+versions, which `pending-linuxcnc-pre2/rollback.sh` puts back. The "Old type
+'bit'/'float'" warnings are harmless. Python `hal.HAL_BIT/HAL_S32/HAL_FLOAT`
+still work, but give FutureWarnings (new names: `hal.HAL_BOOL/HAL_SINT/HAL_REAL`).
+
+Commands:
 
 ```
 cd comp && for c in atc mag drawbar; do sudo halcompile --install $c.comp; done && cd ..
@@ -79,5 +90,11 @@ the lathe config, not this one - rebuild it too if the lathe runs on this PC.
 - `pushmsg`: a long `msgs=` line crashed rtapi_app at startup on pre1 (it
   loads fine in halrun). Keep messages short with no commas, and test a real
   start.
+- Module renames in pre2: `conv_float_s32` is now `conv_real_sint` (frontpanel.hal
+  changed 2026-10-25; the pre1 copy is in pending-pre2comps/orig/). All other modules
+  and pin names were checked in halrun and match.
+- Rolling back to pre1 after pending-atcmanual is installed: run
+  pending-atcmanual/rollback.sh FIRST. The pre1 atc.comp has no manual-mode pins,
+  so toolchanger.hal would fail on `atc.0.arm-maxa`.
 - `[EMCIO] EMCIO = iov2` is ignored in 2.10 (iocontrol is inside milltask).
 - `linuxcnc-ethercat` is installed but this config doesn't use it (no `lcec`).

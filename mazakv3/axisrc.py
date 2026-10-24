@@ -61,3 +61,50 @@ def user_live_update():
         comp["jog-aspeed"] = float(vars.jog_aspeed.get())
     except Exception:
         pass
+
+
+# HORIZONTAL-SPINDLE 3D PREVIEW (2026-10-25)
+#   AXIS's 3D preview assumes a vertical spindle (Z up, mouse spins around Z).
+#   On the FH680, Y is vertical and Z is the horizontal spindle axis, so:
+#   - the mouse spins the view around machine Y (vertical) - the same trick the
+#     AXIS lathe view uses
+#   - the "P" view (and the view at start-up) looks at the part face the way
+#     the spindle sees it, a little from above and at a three-quarter angle:
+#     +X right, +Y up, +Z (spindle retracting) towards you - G-code reads the
+#     right way round.  (Viewed from the operator door instead - lon 180 - it
+#     is mirrored, because the preview is right-handed; tried and rejected
+#     2026-10-25.)
+#   The X / Y / Z view buttons are unchanged (Z = looking at the XY face).
+#   PREVIEW_LAT: + = from above.  PREVIEW_LON: 0 = straight at the face,
+#   30 / 330 = three-quarter from either side.
+PREVIEW_LAT = 25
+PREVIEW_LON = 30
+
+import math as _math
+import types as _types
+
+o.rotation_vectors = [(1., 0., 0.), (0., 1., 0.)]
+
+
+def _hmc_set_view_p(self):
+    # copy of glnav.GlNavBase.set_view_p (LinuxCNC 2.10) with our angles and
+    # the lathe branch left out
+    self.reset()
+    self.perspective = True
+    mid, size = self.extents_info()
+    self.modelview = multiply(self.modelview, translation_matrix(-mid[0], -mid[1], -mid[2]))
+    size = (size[0] ** 2 + size[1] ** 2 + size[2] ** 2) ** .5
+    if size > 1e99: size = 5.  # in case there are no moves in the preview
+    w = self.winfo_width()
+    h = self.winfo_height()
+    fovx = self.fovy if h == 0 else self.fovy * w / h
+    fov = min(fovx, self.fovy)
+    self.set_eyepoint((size * 1.1 + 1.0) / 2 / _math.sin(fov * _math.pi / 180 / 2))
+    self.lat = PREVIEW_LAT
+    self.lon = PREVIEW_LON
+    glRotateScene(self, 1.0, mid[0], mid[1], mid[2], 0, 0, 0, 0)
+
+
+o.set_view_p = _types.MethodType(_hmc_set_view_p, o)
+# AXIS set up the P view before this file ran - redo it with the new angles
+root_window.after_idle(commands.set_view_p)

@@ -179,6 +179,11 @@ setp mag.0.shifter-mag-pos    [ATC]SHIFTER_MAG_POS
 
 # step mode (step-mode, step-go) is driven from the panel - toolchanger_postgui.hal
 
+# ATC manual mode (2026-10-25): jog the arm / flip the drawbar after an
+# aborted change.  Buttons are on the panel (toolchanger_postgui.hal); this
+# is the braking rate used when a jog button is released.
+setp atc.0.arm-maxa           [JOINT_6]MAX_ACCELERATION
+
 ######################E-stop hold (2026-10-24)#################
 # E-stop / machine off stops the j5/j6/j7 stepgens at once, but the limit3s
 # used to carry on to their targets, so the arm / shifter / carousel could

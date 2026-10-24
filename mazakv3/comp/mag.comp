@@ -235,16 +235,16 @@ include <stdlib.h>;
 #define CLAMPED   (shifter_clamped_sensor && !shifter_unclamped_sensor)
 
 #define TRIP(reason) do { \
-    toolchanger_faulted = 1; \
+    toolchanger_faulted_set(1); \
     saved_shifter = shifter_pos_cmd; \
     saved_pocket = tool_prep_pocket_out; \
-    if (pot_out && state != ST_IDLE && state != ST_PREPARED) pot_unknown = 1; \
-    fault_step = state; \
-    fault_reason = (reason); \
-    tool_prep_pocket_out = j5_limit3_out; \
-    shifter_pos_cmd = j7_limit3_out; \
-    tool_prepared = 0; \
-    state = ST_FAULT; \
+    if (pot_out && state != ST_IDLE && state != ST_PREPARED) pot_unknown_set(1); \
+    fault_step_set(state); \
+    fault_reason_set((reason)); \
+    tool_prep_pocket_out_set(j5_limit3_out); \
+    shifter_pos_cmd_set(j7_limit3_out); \
+    tool_prepared_set(0); \
+    state_set(ST_FAULT); \
 } while (0)
 
 static int modulo(int value, int range) {
@@ -280,7 +280,7 @@ FUNCTION(_) {
     if (speed > 1) speed = 1;
     if (speed < min_speed) speed = min_speed;
     if (speed <= 0) speed = 1;
-    shifter_maxv = shifter_maxv_full * speed;
+    shifter_maxv_set(shifter_maxv_full * speed);
 
     /* shifter positions + trims; a trim change moves the shifter live if
        it is at / heading to that position and the arm is at rest */
@@ -288,11 +288,11 @@ FUNCTION(_) {
     if (atc_trim < -trim_max) atc_trim = -trim_max;
     if (mag_trim > trim_max) mag_trim = trim_max;
     if (mag_trim < -trim_max) mag_trim = -trim_max;
-    shifter_atc_eff = shifter_atc_pos + atc_trim;
-    shifter_mag_eff = shifter_mag_pos + mag_trim;
+    shifter_atc_eff_set(shifter_atc_pos + atc_trim);
+    shifter_mag_eff_set(shifter_mag_pos + mag_trim);
     if (state != ST_FAULT && arm_rest) {
-        if (NEAR(shifter_pos_cmd, prev_atc_eff)) shifter_pos_cmd = shifter_atc_eff;
-        else if (NEAR(shifter_pos_cmd, prev_mag_eff)) shifter_pos_cmd = shifter_mag_eff;
+        if (NEAR(shifter_pos_cmd, prev_atc_eff)) shifter_pos_cmd_set(shifter_atc_eff);
+        else if (NEAR(shifter_pos_cmd, prev_mag_eff)) shifter_pos_cmd_set(shifter_mag_eff);
         prev_atc_eff = shifter_atc_eff;
         prev_mag_eff = shifter_mag_eff;
     }
@@ -301,7 +301,7 @@ FUNCTION(_) {
     if (!step_mode) go_armed = 0;
     else if (step_go && !prev_step_go && step_waiting) go_armed = 1;
     prev_step_go = step_go;
-    step_waiting = 0;
+    step_waiting_set(0);
 
     prev_atc_changed = atc_changed;
     prev_fault_reset = fault_reset;
@@ -311,31 +311,31 @@ FUNCTION(_) {
        io-prepared answers it */
     if (tool_prepare && !prev_tool_prepare) req_pending = 1;
     prev_tool_prepare = tool_prepare;
-    io_prepared = tool_prepare && state_loaded;
+    io_prepared_set(tool_prepare && state_loaded);
     prev_pot_clear = pot_clear;
 
     /* load the saved pot state once */
     if (!state_loaded) {
         if (!saved_valid) return;
-        pot_out = saved_pot_out;
-        pot_pocket = saved_pot_pocket;
-        pot_unknown = saved_pot_out && saved_pot_unknown;
-        tool_prep_pocket_out = j5_limit3_out;
-        shifter_pos_cmd = j7_limit3_out;
-        state_loaded = 1;
+        pot_out_set(saved_pot_out);
+        pot_pocket_set(saved_pot_pocket);
+        pot_unknown_set(saved_pot_out && saved_pot_unknown);
+        tool_prep_pocket_out_set(j5_limit3_out);
+        shifter_pos_cmd_set(j7_limit3_out);
+        state_loaded_set(1);
     }
 
     /* step timer */
-    if (state != prev_state) { step_time = 0; work_time = 0; }
-    else { step_time += fperiod; work_time += fperiod * speed; }
+    if (state != prev_state) { step_time_set(0); work_time = 0; }
+    else { step_time_set(step_time + (fperiod)); work_time += fperiod * speed; }
     prev_state = state;
 
     /* Put pot back / pot-clear also clear a "pot position unknown" fault */
     if (state == ST_FAULT && fault_reason == R_POT_UNKNOWN && (clr_req || ret_req)) {
-        toolchanger_faulted = 0;
-        fault_step = 0;
-        fault_reason = 0;
-        state = ST_IDLE;
+        toolchanger_faulted_set(0);
+        fault_step_set(0);
+        fault_reason_set(0);
+        state_set(ST_IDLE);
     }
 
     if (reset && state == ST_FAULT) {
@@ -347,19 +347,19 @@ FUNCTION(_) {
             if (resumable) {
                 /* carry on with the move that faulted; targets go back
                    below, after the step-mode snapshot */
-                state = fault_step;
+                state_set(fault_step);
                 resume_pending = 1;
                 /* fresh timer: the time spent faulted doesn't count */
                 prev_state = ~0u;
-                step_time = 0;
+                step_time_set(0);
                 work_time = 0;
-                pot_unknown = 0;
+                pot_unknown_set(0);
             } else {
-                state = ST_IDLE;
+                state_set(ST_IDLE);
             }
-            toolchanger_faulted = 0;
-            fault_step = 0;
-            fault_reason = 0;
+            toolchanger_faulted_set(0);
+            fault_step_set(0);
+            fault_reason_set(0);
         }
     }
 
@@ -393,19 +393,19 @@ FUNCTION(_) {
     /* resume after a fault reset: put the targets back (held back by step
        mode like any other move) */
     if (resume_pending) {
-        shifter_pos_cmd = saved_shifter;
-        tool_prep_pocket_out = saved_pocket;
+        shifter_pos_cmd_set(saved_shifter);
+        tool_prep_pocket_out_set(saved_pocket);
     }
 
     switch (state) {
     case ST_IDLE:
-        tool_prepared = 0;
-        if (clr_req) { pot_out = 0; pot_unknown = 0; }
+        tool_prepared_set(0);
+        if (clr_req) { pot_out_set(0); pot_unknown_set(0); }
         if (ret_req && pot_out) {
-            pot_unknown = 0;             /* user says it is at the change position */
+            pot_unknown_set(0);             /* user says it is at the change position */
             fetch_after = 0;
             want_pocket = 0;
-            state = ST_RET_GO;
+            state_set(ST_RET_GO);
             break;
         }
         if (!req_pending || !enable) break;
@@ -415,14 +415,14 @@ FUNCTION(_) {
         if (want_pocket < 0 || want_pocket > pockets) { TRIP(R_POCKET); break; }
         if (want_pocket == 0) {
             /* tool already in the spindle - nothing to fetch */
-            if (pot_out) { fetch_after = 0; req_pending = 1; state = ST_RET_GO; }  /* still asked: prepared after */
-            else { prepared_pocket = 0; tool_prepared = 1; state = ST_PREPARED; }
+            if (pot_out) { fetch_after = 0; req_pending = 1; state_set(ST_RET_GO); }  /* still asked: prepared after */
+            else { prepared_pocket = 0; tool_prepared_set(1); state_set(ST_PREPARED); }
         } else if (pot_out && pot_pocket == want_pocket) {
-            prepared_pocket = want_pocket; tool_prepared = 1; state = ST_PREPARED;
+            prepared_pocket = want_pocket; tool_prepared_set(1); state_set(ST_PREPARED);
         } else if (pot_out) {
-            fetch_after = 1; state = ST_RET_GO;
+            fetch_after = 1; state_set(ST_RET_GO);
         } else {
-            state = ST_FETCH_GO;
+            state_set(ST_FETCH_GO);
         }
         break;
 
@@ -432,64 +432,64 @@ FUNCTION(_) {
            by a fault), and only then turn the carousel */
         if (step_time == 0) {
             if (!arm_rest) { TRIP(R_ARM); break; }
-            shifter_clamp = 0;
-            shifter_unclamp = 1;
+            shifter_clamp_set(0);
+            shifter_unclamp_set(1);
             car_sent = 0;
         }
-        if (UNCLAMPED && !NEAR(shifter_pos_cmd, -600)) shifter_pos_cmd = -600;
+        if (UNCLAMPED && !NEAR(shifter_pos_cmd, -600)) shifter_pos_cmd_set(-600);
         if (SHIFTER_AT(-600) && !car_sent) {
             int dest = shortest_path((int)floor(j5_limit3_out + 0.5), want_pocket, pockets);
             if (abs(dest) >= 80000000) { TRIP(R_POCKET); break; }
-            tool_prep_pocket_out = dest;
+            tool_prep_pocket_out_set(dest);
             car_sent = 1;
         }
         if (CAROUSEL_AT_TARGET && carousel_pocket == modulo(want_pocket, pockets)
                 && SHIFTER_AT(-600) && UNCLAMPED) {
-            shifter_pos_cmd = MAG_POS;
-            state = ST_FETCH_IN;
+            shifter_pos_cmd_set(MAG_POS);
+            state_set(ST_FETCH_IN);
         }
         break;
 
     case ST_FETCH_IN:
         if (SHIFTER_AT(MAG_POS)) {
-            shifter_unclamp = 0;
-            shifter_clamp = 1;
-            state = ST_FETCH_GRAB;
+            shifter_unclamp_set(0);
+            shifter_clamp_set(1);
+            state_set(ST_FETCH_GRAB);
         }
         break;
 
     case ST_FETCH_GRAB:
         if (CLAMPED) {
-            shifter_pos_cmd = ATC_POS;
-            pot_out = 1;                 /* pot is leaving the carousel */
-            pot_pocket = want_pocket;
-            state = ST_FETCH_OUT;
+            shifter_pos_cmd_set(ATC_POS);
+            pot_out_set(1);                 /* pot is leaving the carousel */
+            pot_pocket_set(want_pocket);
+            state_set(ST_FETCH_OUT);
         }
         break;
 
     case ST_FETCH_OUT:
         if (SHIFTER_AT(ATC_POS)) {
-            shifter_clamp = 0;
-            shifter_unclamp = 1;
-            state = ST_FETCH_LET;
+            shifter_clamp_set(0);
+            shifter_unclamp_set(1);
+            state_set(ST_FETCH_LET);
         }
         break;
 
     case ST_FETCH_LET:
         if (UNCLAMPED) {
-            shifter_pos_cmd = 0;
-            state = ST_FETCH_BACK;
+            shifter_pos_cmd_set(0);
+            state_set(ST_FETCH_BACK);
         }
         break;
 
     case ST_FETCH_BACK:
-        if (SHIFTER_AT(0)) state = ST_FETCH_DONE;
+        if (SHIFTER_AT(0)) state_set(ST_FETCH_DONE);
         break;
 
     case ST_FETCH_DONE:
         prepared_pocket = want_pocket;
-        tool_prepared = 1;
-        state = ST_PREPARED;
+        tool_prepared_set(1);
+        state_set(ST_PREPARED);
         break;
 
     /* ---------------- prepared, waiting for M6 ---------------- */
@@ -498,29 +498,29 @@ FUNCTION(_) {
             /* Put pot back after an aborted program (2026-10-24): the pot
                goes home, iocontrol keeps its stale prepare, so an M6 now
                stops at atc "not prepared" until a new T is given */
-            tool_prepared = 0;
+            tool_prepared_set(0);
             fetch_after = 0;
             want_pocket = 0;
-            state = ST_RET_GO;
+            state_set(ST_RET_GO);
         } else if (atc_done) {
             /* the pot now holds the old tool - it goes back to the same pocket */
-            tool_prepared = 0;
+            tool_prepared_set(0);
             fetch_after = 0;
-            state = ST_RET_GO;
+            state_set(ST_RET_GO);
         } else if (enable && iocontrol_prep_pocket_in != prepared_pocket) {
             /* new T before M6: swap pots, no fault.  Don't wait for the
                tool-prepare pulse - iocontrol sees tool-prepared still TRUE
                from the last T and drops tool-prepare before we notice. */
-            tool_prepared = 0;
+            tool_prepared_set(0);
             want_pocket = iocontrol_prep_pocket_in;
             if (want_pocket < 0 || want_pocket > pockets) { TRIP(R_POCKET); break; }
             if (!pot_out) {
-                state = want_pocket == 0 ? ST_IDLE : ST_FETCH_GO;
+                state_set(want_pocket == 0 ? ST_IDLE : ST_FETCH_GO);
             } else if (want_pocket == pot_pocket) {
-                prepared_pocket = want_pocket; tool_prepared = 1;
+                prepared_pocket = want_pocket; tool_prepared_set(1);
             } else {
                 fetch_after = want_pocket != 0;
-                state = ST_RET_GO;
+                state_set(ST_RET_GO);
             }
         }
         break;
@@ -531,63 +531,63 @@ FUNCTION(_) {
             int dest = shortest_path((int)floor(j5_limit3_out + 0.5), pot_pocket, pockets);
             if (abs(dest) >= 80000000) { TRIP(R_POCKET); break; }
             if (!shifter_clear) { TRIP(R_SHIFTER); break; }
-            tool_prep_pocket_out = dest;
+            tool_prep_pocket_out_set(dest);
         }
         if (CAROUSEL_AT_TARGET && carousel_pocket == modulo(pot_pocket, pockets)) {
             if (!arm_rest) { TRIP(R_ARM); break; }
-            shifter_clamp = 0;
-            shifter_unclamp = 1;
-            state = ST_RET_UNCL;
+            shifter_clamp_set(0);
+            shifter_unclamp_set(1);
+            state_set(ST_RET_UNCL);
         }
         break;
 
     case ST_RET_UNCL:
-        if (UNCLAMPED && !NEAR(shifter_pos_cmd, ATC_POS)) shifter_pos_cmd = ATC_POS;
+        if (UNCLAMPED && !NEAR(shifter_pos_cmd, ATC_POS)) shifter_pos_cmd_set(ATC_POS);
         if (SHIFTER_AT(ATC_POS)) {
-            shifter_unclamp = 0;
-            shifter_clamp = 1;
-            state = ST_RET_GRAB;
+            shifter_unclamp_set(0);
+            shifter_clamp_set(1);
+            state_set(ST_RET_GRAB);
         }
         break;
 
     case ST_RET_GRAB:
         if (CLAMPED) {
-            shifter_pos_cmd = MAG_POS;
-            state = ST_RET_IN;
+            shifter_pos_cmd_set(MAG_POS);
+            state_set(ST_RET_IN);
         }
         break;
 
     case ST_RET_IN:
         if (SHIFTER_AT(MAG_POS)) {
-            shifter_clamp = 0;
-            shifter_unclamp = 1;
-            state = ST_RET_LET;
+            shifter_clamp_set(0);
+            shifter_unclamp_set(1);
+            state_set(ST_RET_LET);
         }
         break;
 
     case ST_RET_LET:
         if (UNCLAMPED) {
-            pot_out = 0;                 /* pot is back in its pocket */
-            shifter_pos_cmd = -600;
-            state = ST_RET_PARK;
+            pot_out_set(0);                 /* pot is back in its pocket */
+            shifter_pos_cmd_set(-600);
+            state_set(ST_RET_PARK);
         }
         break;
 
     case ST_RET_PARK:
-        if (SHIFTER_AT(-600)) state = ST_RET_DONE;
+        if (SHIFTER_AT(-600)) state_set(ST_RET_DONE);
         break;
 
     case ST_RET_DONE:
         if (fetch_after) {
             fetch_after = 0;
-            state = ST_FETCH_GO;
+            state_set(ST_FETCH_GO);
         } else if (req_pending && want_pocket == 0) {
             req_pending = 0;
             prepared_pocket = 0;
-            tool_prepared = 1;
-            state = ST_PREPARED;
+            tool_prepared_set(1);
+            state_set(ST_PREPARED);
         } else {
-            state = ST_IDLE;
+            state_set(ST_IDLE);
         }
         break;
 
@@ -595,13 +595,13 @@ FUNCTION(_) {
         break;
 
     default:
-        default_bit = 1;
+        default_bit_set(1);
         break;
     }
 
     /* never claim prepared for a pocket iocontrol isn't asking for */
     if (state != ST_PREPARED || iocontrol_prep_pocket_in != prepared_pocket)
-        tool_prepared = 0;
+        tool_prepared_set(0);
 
     /* step mode: a step that moves the shifter or carousel or changes the
        shifter clamp is held back (everything put back as it was) until
@@ -612,27 +612,27 @@ FUNCTION(_) {
         if (go_armed) {
             go_armed = 0;
         } else {
-            next_shifter = shifter_pos_cmd;
-            next_pocket = modulo((int)floor(tool_prep_pocket_out + 0.5), pockets);
-            next_clamp = shifter_clamp != snap_clamp || shifter_unclamp != snap_unclamp
-                         ? (shifter_clamp ? 1 : 2) : 0;
-            state = snap_state;
-            shifter_pos_cmd = snap_shifter;
-            tool_prep_pocket_out = snap_pocket;
-            shifter_clamp = snap_clamp;
-            shifter_unclamp = snap_unclamp;
-            tool_prepared = snap_prepared;
-            pot_out = snap_pot_out;
-            pot_pocket = snap_pot_pocket;
+            next_shifter_set(shifter_pos_cmd);
+            next_pocket_set(modulo((int)floor(tool_prep_pocket_out + 0.5), pockets));
+            next_clamp_set(shifter_clamp != snap_clamp || shifter_unclamp != snap_unclamp
+                         ? (shifter_clamp ? 1 : 2) : 0);
+            state_set(snap_state);
+            shifter_pos_cmd_set(snap_shifter);
+            tool_prep_pocket_out_set(snap_pocket);
+            shifter_clamp_set(snap_clamp);
+            shifter_unclamp_set(snap_unclamp);
+            tool_prepared_set(snap_prepared);
+            pot_out_set(snap_pot_out);
+            pot_pocket_set(snap_pot_pocket);
             want_pocket = snap_want;
             prepared_pocket = snap_prepared_pocket;
             fetch_after = snap_fetch_after;
             car_sent = snap_car_sent;
             req_pending = snap_req;
-            step_waiting = 1;
+            step_waiting_set(1);
             /* re-enter the state next cycle: timer from 0, one-shots run again */
             prev_state = ~0u;
-            step_time = 0;
+            step_time_set(0);
             work_time = 0;
         }
     }
@@ -645,8 +645,8 @@ FUNCTION(_) {
     if ((state >= ST_FETCH_GO && state <= ST_PREPARED) || state == ST_FAULT) req_pending = 0;
 
     /* E-stop / machine off: targets = where things really are */
-    car_hold = !enable && car_homed;
-    shifter_hold = !enable && shifter_homed;
-    if (car_hold) tool_prep_pocket_out = car_fb;
-    if (shifter_hold) shifter_pos_cmd = shifter_fb;
+    car_hold_set(!enable && car_homed);
+    shifter_hold_set(!enable && shifter_homed);
+    if (car_hold) tool_prep_pocket_out_set(car_fb);
+    if (shifter_hold) shifter_pos_cmd_set(shifter_fb);
 }

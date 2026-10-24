@@ -1,4 +1,5 @@
-<!-- Toolchanger tab of the side panel (2026-10-14).  Hand written; inserted
+<!-- Toolchanger + ATC manual tabs of the side panel (2026-10-14; ATC manual
+     tab 2026-10-25).  Hand written; inserted
      into toolmeasure.xml by build_toolmeasure.py.  HAL: toolchanger_postgui.hal -->
 <vbox>
   <labelframe text="ATC arm">
@@ -51,7 +52,7 @@
         </led>
       </hbox>
       <label>
-        <text>"Manual unclamp: HOLD B+ (spindle stopped, machine on).\nRefused: 1 machine off 2 spindle on 3 turning 4 TC busy"</text>
+        <text>"Manual unclamp: HOLD B+ (spindle stopped, machine on).\nRefused: 1 machine off 2 spindle on 3 turning 4 TC running"</text>
         <font>("Helvetica",8)</font>
         <fg>"#555555"</fg>
       </label>
@@ -62,6 +63,8 @@
       </label>
     </vbox>
   </labelframe>
+
+
 
   <labelframe text="Magazine / shifter">
     <font>("Helvetica",11,"bold")</font>
@@ -116,6 +119,8 @@
       </label>
     </vbox>
   </labelframe>
+
+
 
   <labelframe text="Step / slow mode">
     <font>("Helvetica",11,"bold")</font>
@@ -196,44 +201,9 @@
     </vbox>
   </labelframe>
 
-  <labelframe text="Shifter positions">
-    <font>("Helvetica",11,"bold")</font>
-    <vbox>
-      <hbox>
-        <label><text>"Arm side trim"</text><font>("Helvetica",10)</font></label>
-        <spinbox>
-          <halpin>"tc-shifter-atc-trim"</halpin>
-          <min_>-25</min_>
-          <max_>25</max_>
-          <resolution>0.05</resolution>
-          <initval>0</initval>
-          <format>"2.2f"</format>
-          <font>("Helvetica",11)</font>
-        </spinbox>
-        <label><text>"="</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-shifter-atc-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
-      </hbox>
-      <hbox>
-        <label><text>"Carousel trim"</text><font>("Helvetica",10)</font></label>
-        <spinbox>
-          <halpin>"tc-shifter-mag-trim"</halpin>
-          <min_>-25</min_>
-          <max_>25</max_>
-          <resolution>0.05</resolution>
-          <initval>0</initval>
-          <format>"2.2f"</format>
-          <font>("Helvetica",11)</font>
-        </spinbox>
-        <label><text>"="</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-shifter-mag-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
-      </hbox>
-      <label>
-        <text>"Moves the shifter live if it is at that spot\n(arm at rest). Copy the = value into the ini\n[ATC] SHIFTER_ATC_POS / SHIFTER_MAG_POS.\nTrims go back to 0 on restart."</text>
-        <font>("Helvetica",8)</font>
-        <fg>"#555555"</fg>
-      </label>
-    </vbox>
-  </labelframe>
+
+
+
 
   <label><text>" "</text></label>
   <button>
@@ -292,4 +262,101 @@
     <font>("Helvetica",8)</font>
     <fg>"#555555"</fg>
   </label>
+</vbox>
+
+<!-- ATC manual tab -->
+<vbox>
+  <labelframe text="ATC manual (after an aborted change)">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <checkbutton>
+          <halpin>"tc-atc-manual"</halpin>
+          <text>"ATC manual"</text>
+          <font>("Helvetica",11,"bold")</font>
+        </checkbutton>
+        <led>
+          <halpin>"tc-atc-manual-ok"</halpin>
+          <size>16</size>
+          <on_color>"orange"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"active   arm"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-manual-arm-pos"</halpin><format>"7.2f"</format><font>("Helvetica",11,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <button>
+          <halpin>"tc-arm-jog-rev"</halpin>
+          <text>"ARM -"</text>
+          <font>("Helvetica",14,"bold")</font>
+          <bg>"#1f6fb2"</bg>
+          <fg>"#ffffff"</fg>
+          <activebackground>"#185a91"</activebackground>
+          <activeforeground>"#ffffff"</activeforeground>
+          <relief>"raised"</relief>
+          <bd>4</bd>
+          <padx>14</padx>
+          <pady>8</pady>
+        </button>
+        <button>
+          <halpin>"tc-arm-jog-fwd"</halpin>
+          <text>"ARM +"</text>
+          <font>("Helvetica",14,"bold")</font>
+          <bg>"#1f6fb2"</bg>
+          <fg>"#ffffff"</fg>
+          <activebackground>"#185a91"</activebackground>
+          <activeforeground>"#ffffff"</activeforeground>
+          <relief>"raised"</relief>
+          <bd>4</bd>
+          <padx>14</padx>
+          <pady>8</pady>
+        </button>
+      </hbox>
+      <label>
+        <text>"NO interlocks - you watch the arm. Hold ARM +/-\n(speed = Max Velocity slider). Active only with no\nM6 running and machine on. 0/500 rest 100 grip\n418 tools out. Drawbar: hold B+ (works while faulted).\nLeave the arm at 0 or 500 and untick before the\nnext M6. Fix the tool table after."</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <labelframe text="Shifter positions">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <label><text>"Arm side trim"</text><font>("Helvetica",10)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-atc-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",11)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-shifter-atc-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <label><text>"Carousel trim"</text><font>("Helvetica",10)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-mag-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",11)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-shifter-mag-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <label>
+        <text>"Moves the shifter live if it is at that spot\n(arm at rest). Copy the = value into the ini\n[ATC] SHIFTER_ATC_POS / SHIFTER_MAG_POS.\nTrims go back to 0 on restart."</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
 </vbox>

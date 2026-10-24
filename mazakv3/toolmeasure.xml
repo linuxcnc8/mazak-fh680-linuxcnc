@@ -3,10 +3,10 @@
 <pyvcp>
 
 <tabs>
-  <names>["Tool measure", "Toolchanger"]</names>
+  <names>["Tool measure", "Toolchanger", "ATC manual"]</names>
 
 <labelframe text="Auto Touch Off Tools">
-  <font>("Helvetica",12,"bold")</font>
+  <font>("Helvetica",10,"bold")</font>
   <fg>"#000000"</fg>
   <relief>"groove"</relief>
   <bd>2</bd>
@@ -14,7 +14,7 @@
 
   <label>
     <text>"Tick tools to measure - dia from tool table"</text>
-    <font>("Helvetica",9)</font>
+    <font>("Helvetica",7)</font>
     <fg>"#000000"</fg>
   </label>
 
@@ -30,7 +30,7 @@
               <text>"T1"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -41,7 +41,7 @@
               <text>"T2"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -52,7 +52,7 @@
               <text>"T3"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -63,7 +63,7 @@
               <text>"T4"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -74,7 +74,7 @@
               <text>"T5"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -85,7 +85,7 @@
               <text>"T6"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -96,7 +96,7 @@
               <text>"T7"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -107,7 +107,7 @@
               <text>"T8"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -118,7 +118,7 @@
               <text>"T9"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -129,7 +129,7 @@
               <text>"T10"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -142,7 +142,7 @@
               <text>"T11"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -153,7 +153,7 @@
               <text>"T12"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -164,7 +164,7 @@
               <text>"T13"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -175,7 +175,7 @@
               <text>"T14"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -186,7 +186,7 @@
               <text>"T15"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -197,7 +197,7 @@
               <text>"T16"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -208,7 +208,7 @@
               <text>"T17"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -219,7 +219,7 @@
               <text>"T18"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -230,7 +230,7 @@
               <text>"T19"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -241,7 +241,7 @@
               <text>"T20"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -253,26 +253,26 @@
           <button>
             <halpin>"ts-all-1"</halpin>
             <text>"All"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
           <button>
             <halpin>"ts-clear-1"</halpin>
             <text>"Clear"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
         </hbox>
     </vbox>
@@ -286,7 +286,7 @@
               <text>"T21"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -297,7 +297,7 @@
               <text>"T22"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -308,7 +308,7 @@
               <text>"T23"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -319,7 +319,7 @@
               <text>"T24"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -330,7 +330,7 @@
               <text>"T25"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -341,7 +341,7 @@
               <text>"T26"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -352,7 +352,7 @@
               <text>"T27"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -363,7 +363,7 @@
               <text>"T28"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -374,7 +374,7 @@
               <text>"T29"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -385,7 +385,7 @@
               <text>"T30"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -398,7 +398,7 @@
               <text>"T31"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -409,7 +409,7 @@
               <text>"T32"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -420,7 +420,7 @@
               <text>"T33"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -431,7 +431,7 @@
               <text>"T34"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -442,7 +442,7 @@
               <text>"T35"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -453,7 +453,7 @@
               <text>"T36"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -464,7 +464,7 @@
               <text>"T37"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -475,7 +475,7 @@
               <text>"T38"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -486,7 +486,7 @@
               <text>"T39"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -497,7 +497,7 @@
               <text>"T40"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -509,26 +509,26 @@
           <button>
             <halpin>"ts-all-2"</halpin>
             <text>"All"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
           <button>
             <halpin>"ts-clear-2"</halpin>
             <text>"Clear"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
         </hbox>
     </vbox>
@@ -542,7 +542,7 @@
               <text>"T41"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -553,7 +553,7 @@
               <text>"T42"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -564,7 +564,7 @@
               <text>"T43"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -575,7 +575,7 @@
               <text>"T44"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -586,7 +586,7 @@
               <text>"T45"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -597,7 +597,7 @@
               <text>"T46"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -608,7 +608,7 @@
               <text>"T47"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -619,7 +619,7 @@
               <text>"T48"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -630,7 +630,7 @@
               <text>"T49"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -641,7 +641,7 @@
               <text>"T50"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -654,7 +654,7 @@
               <text>"T51"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -665,7 +665,7 @@
               <text>"T52"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -676,7 +676,7 @@
               <text>"T53"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -687,7 +687,7 @@
               <text>"T54"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -698,7 +698,7 @@
               <text>"T55"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -709,7 +709,7 @@
               <text>"T56"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -720,7 +720,7 @@
               <text>"T57"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -731,7 +731,7 @@
               <text>"T58"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -742,7 +742,7 @@
               <text>"T59"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -753,7 +753,7 @@
               <text>"T60"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -765,26 +765,26 @@
           <button>
             <halpin>"ts-all-3"</halpin>
             <text>"All"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
           <button>
             <halpin>"ts-clear-3"</halpin>
             <text>"Clear"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
         </hbox>
     </vbox>
@@ -798,7 +798,7 @@
               <text>"T61"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -809,7 +809,7 @@
               <text>"T62"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -820,7 +820,7 @@
               <text>"T63"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -831,7 +831,7 @@
               <text>"T64"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -842,7 +842,7 @@
               <text>"T65"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -853,7 +853,7 @@
               <text>"T66"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -864,7 +864,7 @@
               <text>"T67"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -875,7 +875,7 @@
               <text>"T68"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -886,7 +886,7 @@
               <text>"T69"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -897,7 +897,7 @@
               <text>"T70"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -910,7 +910,7 @@
               <text>"T71"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -921,7 +921,7 @@
               <text>"T72"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -932,7 +932,7 @@
               <text>"T73"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -943,7 +943,7 @@
               <text>"T74"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -954,7 +954,7 @@
               <text>"T75"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -965,7 +965,7 @@
               <text>"T76"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -976,7 +976,7 @@
               <text>"T77"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -987,7 +987,7 @@
               <text>"T78"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -998,7 +998,7 @@
               <text>"T79"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -1009,7 +1009,7 @@
               <text>"T80"</text>
               <width>5</width>
               <anchor>"w"</anchor>
-              <font>("Helvetica",10)</font>
+              <font>("Helvetica",8)</font>
               <fg>"#1f2933"</fg>
               <selectcolor>"#ffffff"</selectcolor>
               <activebackground>"#dbe4f0"</activebackground>
@@ -1021,26 +1021,26 @@
           <button>
             <halpin>"ts-all-4"</halpin>
             <text>"All"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
           <button>
             <halpin>"ts-clear-4"</halpin>
             <text>"Clear"</text>
-            <font>("Helvetica",10,"bold")</font>
+            <font>("Helvetica",8,"bold")</font>
             <bg>"#2e9e44"</bg>
             <fg>"#ffffff"</fg>
             <activebackground>"#26863a"</activebackground>
             <activeforeground>"#ffffff"</activeforeground>
             <relief>"raised"</relief>
-            <bd>3</bd>
-            <padx>8</padx>
+            <bd>2</bd>
+            <padx>6</padx>
           </button>
         </hbox>
     </vbox>
@@ -1052,274 +1052,244 @@
   <button>
     <halpin>"measure-tools"</halpin>
     <text>"Measure Tools"</text>
-    <font>("Helvetica",12,"bold")</font>
+    <font>("Helvetica",10,"bold")</font>
     <bg>"#2e9e44"</bg>
     <fg>"#ffffff"</fg>
     <activebackground>"#26863a"</activebackground>
     <activeforeground>"#ffffff"</activeforeground>
     <relief>"raised"</relief>
-    <bd>4</bd>
-    <padx>10</padx>
-    <pady>6</pady>
+    <bd>3</bd>
+    <padx>8</padx>
+    <pady>5</pady>
   </button>
 
   </vbox>
 </labelframe>
 
-<!-- Toolchanger tab of the side panel (2026-10-14).  Hand written; inserted
+<!-- Toolchanger + ATC manual tabs of the side panel (2026-10-14; ATC manual
+     tab 2026-10-25).  Hand written; inserted
      into toolmeasure.xml by build_toolmeasure.py.  HAL: toolchanger_postgui.hal -->
 <vbox>
   <labelframe text="ATC arm">
-    <font>("Helvetica",11,"bold")</font>
+    <font>("Helvetica",9,"bold")</font>
     <vbox>
       <hbox>
         <led>
           <halpin>"tc-atc-fault"</halpin>
-          <size>16</size>
+          <size>13</size>
           <on_color>"red"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"Fault  step"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-atc-step"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></s32>
-        <label><text>"reason"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-atc-reason"</halpin><format>"d"</format><font>("Helvetica",10,"bold")</font></s32>
+        <label><text>"Fault  step"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-atc-step"</halpin><format>"3d"</format><font>("Helvetica",8,"bold")</font></s32>
+        <label><text>"reason"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-atc-reason"</halpin><format>"d"</format><font>("Helvetica",8,"bold")</font></s32>
       </hbox>
       <hbox>
-        <label><text>"State"</text><font>("Helvetica",10)</font></label>
-        <u32><halpin>"tc-atc-state"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></u32>
-        <label><text>"  Spindle held"</text><font>("Helvetica",10)</font></label>
+        <label><text>"State"</text><font>("Helvetica",8)</font></label>
+        <u32><halpin>"tc-atc-state"</halpin><format>"3d"</format><font>("Helvetica",8,"bold")</font></u32>
+        <label><text>"  Spindle held"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-spindle-held"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"#2e9e44"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
       </hbox>
       <hbox>
-        <label><text>"Drawbar unclamped"</text><font>("Helvetica",10)</font></label>
+        <label><text>"Drawbar unclamped"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-drawbar-unclamped"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"orange"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"  Manual OK"</text><font>("Helvetica",10)</font></label>
+        <label><text>"  Manual OK"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-drawbar-ok"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"#2e9e44"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"  Motion blocked"</text><font>("Helvetica",10)</font></label>
+        <label><text>"  Motion blocked"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-drawbar-inhibit"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"red"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
       </hbox>
       <label>
-        <text>"Manual unclamp: HOLD B+ (spindle stopped, machine on).\nRefused: 1 machine off 2 spindle on 3 turning 4 TC busy"</text>
-        <font>("Helvetica",8)</font>
+        <text>"Manual unclamp: HOLD B+ (spindle stopped, machine on).\nRefused: 1 machine off 2 spindle on 3 turning 4 TC running"</text>
+        <font>("Helvetica",6)</font>
         <fg>"#555555"</fg>
       </label>
       <label>
         <text>"1 timeout 2 spindle 3 Y height 4 aborted\n5 no pot ready 6 shifter in the way 7 Z pos"</text>
-        <font>("Helvetica",8)</font>
+        <font>("Helvetica",6)</font>
         <fg>"#555555"</fg>
       </label>
     </vbox>
   </labelframe>
 
+
+
   <labelframe text="Magazine / shifter">
-    <font>("Helvetica",11,"bold")</font>
+    <font>("Helvetica",9,"bold")</font>
     <vbox>
       <hbox>
         <led>
           <halpin>"tc-mag-fault"</halpin>
-          <size>16</size>
+          <size>13</size>
           <on_color>"red"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"Fault  step"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-mag-step"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></s32>
-        <label><text>"reason"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-mag-reason"</halpin><format>"d"</format><font>("Helvetica",10,"bold")</font></s32>
+        <label><text>"Fault  step"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-mag-step"</halpin><format>"3d"</format><font>("Helvetica",8,"bold")</font></s32>
+        <label><text>"reason"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-mag-reason"</halpin><format>"d"</format><font>("Helvetica",8,"bold")</font></s32>
       </hbox>
       <hbox>
-        <label><text>"State"</text><font>("Helvetica",10)</font></label>
-        <u32><halpin>"tc-mag-state"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></u32>
-        <label><text>"  Pot ready"</text><font>("Helvetica",10)</font></label>
+        <label><text>"State"</text><font>("Helvetica",8)</font></label>
+        <u32><halpin>"tc-mag-state"</halpin><format>"3d"</format><font>("Helvetica",8,"bold")</font></u32>
+        <label><text>"  Pot ready"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-tool-ready"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"#2e9e44"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
       </hbox>
       <hbox>
-        <label><text>"Pot out of carousel"</text><font>("Helvetica",10)</font></label>
+        <label><text>"Pot out of carousel"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-pot-out"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"orange"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"  pocket"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-pot-pocket"</halpin><format>"2d"</format><font>("Helvetica",10,"bold")</font></s32>
+        <label><text>"  pocket"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-pot-pocket"</halpin><format>"2d"</format><font>("Helvetica",8,"bold")</font></s32>
       </hbox>
       <hbox>
-        <label><text>"Pot position UNKNOWN"</text><font>("Helvetica",10)</font></label>
+        <label><text>"Pot position UNKNOWN"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-pot-unknown"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"red"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
       </hbox>
       <label>
         <text>"1 timeout 2 shifter in the way 3 arm not at rest\n4 machine off 5 bad pocket 6 pot position unknown\n(6: Put pot back if it is at the arm side, or\nPot is in carousel if you put it back by hand)"</text>
-        <font>("Helvetica",8)</font>
+        <font>("Helvetica",6)</font>
         <fg>"#555555"</fg>
       </label>
     </vbox>
   </labelframe>
 
+
+
   <labelframe text="Step / slow mode">
-    <font>("Helvetica",11,"bold")</font>
+    <font>("Helvetica",9,"bold")</font>
     <vbox>
       <hbox>
         <checkbutton>
           <halpin>"tc-step-mode"</halpin>
           <text>"Step mode"</text>
-          <font>("Helvetica",11,"bold")</font>
+          <font>("Helvetica",9,"bold")</font>
         </checkbutton>
-        <label><text>"  speed %"</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-speed-pct"</halpin><format>"3.0f"</format><font>("Helvetica",11,"bold")</font></number>
+        <label><text>"  speed %"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-speed-pct"</halpin><format>"3.0f"</format><font>("Helvetica",9,"bold")</font></number>
       </hbox>
       <label>
         <text>"Arm + shifter speed = AXIS Max Velocity slider"</text>
-        <font>("Helvetica",8)</font>
+        <font>("Helvetica",6)</font>
         <fg>"#555555"</fg>
       </label>
       <button>
         <halpin>"tc-step-go"</halpin>
         <text>"NEXT STEP"</text>
-        <font>("Helvetica",14,"bold")</font>
+        <font>("Helvetica",11,"bold")</font>
         <bg>"#1f6fb2"</bg>
         <fg>"#ffffff"</fg>
         <activebackground>"#185a91"</activebackground>
         <activeforeground>"#ffffff"</activeforeground>
         <relief>"raised"</relief>
-        <bd>4</bd>
-        <padx>10</padx>
-        <pady>8</pady>
+        <bd>3</bd>
+        <padx>8</padx>
+        <pady>6</pady>
       </button>
       <hbox>
         <led>
           <halpin>"tc-atc-waiting"</halpin>
-          <size>16</size>
+          <size>13</size>
           <on_color>"yellow"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"ARM next: to"</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-next-arm"</halpin><format>"4.0f"</format><font>("Helvetica",11,"bold")</font></number>
-        <label><text>" unclamp"</text><font>("Helvetica",10)</font></label>
+        <label><text>"ARM next: to"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-next-arm"</halpin><format>"4.0f"</format><font>("Helvetica",9,"bold")</font></number>
+        <label><text>" unclamp"</text><font>("Helvetica",8)</font></label>
         <led>
           <halpin>"tc-next-unclamp"</halpin>
-          <size>14</size>
+          <size>11</size>
           <on_color>"orange"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
       </hbox>
       <hbox>
-        <label><text>"     now at"</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-arm-pos"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+        <label><text>"     now at"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-arm-pos"</halpin><format>"7.2f"</format><font>("Helvetica",8,"bold")</font></number>
       </hbox>
       <hbox>
         <led>
           <halpin>"tc-mag-waiting"</halpin>
-          <size>16</size>
+          <size>13</size>
           <on_color>"yellow"</on_color>
           <off_color>"#c8c8c8"</off_color>
         </led>
-        <label><text>"SHIFTER next: to"</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-next-shifter"</halpin><format>"7.2f"</format><font>("Helvetica",11,"bold")</font></number>
+        <label><text>"SHIFTER next: to"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-next-shifter"</halpin><format>"7.2f"</format><font>("Helvetica",9,"bold")</font></number>
       </hbox>
       <hbox>
-        <label><text>"     clamp"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-next-clamp"</halpin><format>"d"</format><font>("Helvetica",11,"bold")</font></s32>
-        <label><text>"  pocket"</text><font>("Helvetica",10)</font></label>
-        <s32><halpin>"tc-next-pocket"</halpin><format>"2d"</format><font>("Helvetica",11,"bold")</font></s32>
+        <label><text>"     clamp"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-next-clamp"</halpin><format>"d"</format><font>("Helvetica",9,"bold")</font></s32>
+        <label><text>"  pocket"</text><font>("Helvetica",8)</font></label>
+        <s32><halpin>"tc-next-pocket"</halpin><format>"2d"</format><font>("Helvetica",9,"bold")</font></s32>
       </hbox>
       <hbox>
-        <label><text>"     now at"</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-shifter-pos"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+        <label><text>"     now at"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-shifter-pos"</halpin><format>"7.2f"</format><font>("Helvetica",8,"bold")</font></number>
       </hbox>
       <label>
         <text>"Yellow = waiting for NEXT. Values show what NEXT will do.\nclamp 1 clamp  2 unclamp  0 no change.\nArm 0/500 rest  100 grip  418 tools out"</text>
-        <font>("Helvetica",8)</font>
+        <font>("Helvetica",6)</font>
         <fg>"#555555"</fg>
       </label>
     </vbox>
   </labelframe>
 
-  <labelframe text="Shifter positions">
-    <font>("Helvetica",11,"bold")</font>
-    <vbox>
-      <hbox>
-        <label><text>"Arm side trim"</text><font>("Helvetica",10)</font></label>
-        <spinbox>
-          <halpin>"tc-shifter-atc-trim"</halpin>
-          <min_>-25</min_>
-          <max_>25</max_>
-          <resolution>0.05</resolution>
-          <initval>0</initval>
-          <format>"2.2f"</format>
-          <font>("Helvetica",11)</font>
-        </spinbox>
-        <label><text>"="</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-shifter-atc-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
-      </hbox>
-      <hbox>
-        <label><text>"Carousel trim"</text><font>("Helvetica",10)</font></label>
-        <spinbox>
-          <halpin>"tc-shifter-mag-trim"</halpin>
-          <min_>-25</min_>
-          <max_>25</max_>
-          <resolution>0.05</resolution>
-          <initval>0</initval>
-          <format>"2.2f"</format>
-          <font>("Helvetica",11)</font>
-        </spinbox>
-        <label><text>"="</text><font>("Helvetica",10)</font></label>
-        <number><halpin>"tc-shifter-mag-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
-      </hbox>
-      <label>
-        <text>"Moves the shifter live if it is at that spot\n(arm at rest). Copy the = value into the ini\n[ATC] SHIFTER_ATC_POS / SHIFTER_MAG_POS.\nTrims go back to 0 on restart."</text>
-        <font>("Helvetica",8)</font>
-        <fg>"#555555"</fg>
-      </label>
-    </vbox>
-  </labelframe>
+
+
+
 
   <label><text>" "</text></label>
   <button>
     <halpin>"tc-reset"</halpin>
     <text>"Reset toolchanger fault"</text>
-    <font>("Helvetica",12,"bold")</font>
+    <font>("Helvetica",10,"bold")</font>
     <bg>"#c0392b"</bg>
     <fg>"#ffffff"</fg>
     <activebackground>"#a93226"</activebackground>
     <activeforeground>"#ffffff"</activeforeground>
     <relief>"raised"</relief>
-    <bd>4</bd>
-    <padx>10</padx>
-    <pady>6</pady>
+    <bd>3</bd>
+    <padx>8</padx>
+    <pady>5</pady>
   </button>
   <label>
     <text>"Fix the cause first. ATC: if M6 is still waiting the\nchange carries on from the step that faulted.\nMAG: finishes the move it was doing (machine on)."</text>
-    <font>("Helvetica",8)</font>
+    <font>("Helvetica",6)</font>
     <fg>"#555555"</fg>
   </label>
 
@@ -1327,18 +1297,18 @@
   <button>
     <halpin>"tc-return-pot"</halpin>
     <text>"Put pot back in carousel"</text>
-    <font>("Helvetica",10,"bold")</font>
+    <font>("Helvetica",8,"bold")</font>
     <bg>"#2e9e44"</bg>
     <fg>"#ffffff"</fg>
     <activebackground>"#26863a"</activebackground>
     <activeforeground>"#ffffff"</activeforeground>
     <relief>"raised"</relief>
-    <bd>3</bd>
-    <padx>8</padx>
+    <bd>2</bd>
+    <padx>6</padx>
   </button>
   <label>
     <text>"Magazine idle or pot ready (no M6 running).\nArm must be at rest. Re-issue T after."</text>
-    <font>("Helvetica",8)</font>
+    <font>("Helvetica",6)</font>
     <fg>"#555555"</fg>
   </label>
 
@@ -1346,20 +1316,117 @@
   <button>
     <halpin>"tc-pot-clear"</halpin>
     <text>"Pot is in carousel (clear flag)"</text>
-    <font>("Helvetica",10,"bold")</font>
+    <font>("Helvetica",8,"bold")</font>
     <bg>"#7f8c8d"</bg>
     <fg>"#ffffff"</fg>
     <activebackground>"#6c7a7b"</activebackground>
     <activeforeground>"#ffffff"</activeforeground>
     <relief>"raised"</relief>
-    <bd>3</bd>
-    <padx>8</padx>
+    <bd>2</bd>
+    <padx>6</padx>
   </button>
   <label>
     <text>"Only after putting the pot back BY HAND.\nNothing moves - it just forgets the out pot."</text>
-    <font>("Helvetica",8)</font>
+    <font>("Helvetica",6)</font>
     <fg>"#555555"</fg>
   </label>
+</vbox>
+
+<!-- ATC manual tab -->
+<vbox>
+  <labelframe text="ATC manual (after an aborted change)">
+    <font>("Helvetica",9,"bold")</font>
+    <vbox>
+      <hbox>
+        <checkbutton>
+          <halpin>"tc-atc-manual"</halpin>
+          <text>"ATC manual"</text>
+          <font>("Helvetica",9,"bold")</font>
+        </checkbutton>
+        <led>
+          <halpin>"tc-atc-manual-ok"</halpin>
+          <size>13</size>
+          <on_color>"orange"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"active   arm"</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-manual-arm-pos"</halpin><format>"7.2f"</format><font>("Helvetica",9,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <button>
+          <halpin>"tc-arm-jog-rev"</halpin>
+          <text>"ARM -"</text>
+          <font>("Helvetica",11,"bold")</font>
+          <bg>"#1f6fb2"</bg>
+          <fg>"#ffffff"</fg>
+          <activebackground>"#185a91"</activebackground>
+          <activeforeground>"#ffffff"</activeforeground>
+          <relief>"raised"</relief>
+          <bd>3</bd>
+          <padx>11</padx>
+          <pady>6</pady>
+        </button>
+        <button>
+          <halpin>"tc-arm-jog-fwd"</halpin>
+          <text>"ARM +"</text>
+          <font>("Helvetica",11,"bold")</font>
+          <bg>"#1f6fb2"</bg>
+          <fg>"#ffffff"</fg>
+          <activebackground>"#185a91"</activebackground>
+          <activeforeground>"#ffffff"</activeforeground>
+          <relief>"raised"</relief>
+          <bd>3</bd>
+          <padx>11</padx>
+          <pady>6</pady>
+        </button>
+      </hbox>
+      <label>
+        <text>"NO interlocks - you watch the arm. Hold ARM +/-\n(speed = Max Velocity slider). Active only with no\nM6 running and machine on. 0/500 rest 100 grip\n418 tools out. Drawbar: hold B+ (works while faulted).\nLeave the arm at 0 or 500 and untick before the\nnext M6. Fix the tool table after."</text>
+        <font>("Helvetica",6)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <labelframe text="Shifter positions">
+    <font>("Helvetica",9,"bold")</font>
+    <vbox>
+      <hbox>
+        <label><text>"Arm side trim"</text><font>("Helvetica",8)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-atc-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",9)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-shifter-atc-eff"</halpin><format>"7.2f"</format><font>("Helvetica",8,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <label><text>"Carousel trim"</text><font>("Helvetica",8)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-mag-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",9)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",8)</font></label>
+        <number><halpin>"tc-shifter-mag-eff"</halpin><format>"7.2f"</format><font>("Helvetica",8,"bold")</font></number>
+      </hbox>
+      <label>
+        <text>"Moves the shifter live if it is at that spot\n(arm at rest). Copy the = value into the ini\n[ATC] SHIFTER_ATC_POS / SHIFTER_MAG_POS.\nTrims go back to 0 on restart."</text>
+        <font>("Helvetica",6)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
 </vbox>
 
 </tabs>

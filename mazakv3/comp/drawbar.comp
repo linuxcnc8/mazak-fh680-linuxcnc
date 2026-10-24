@@ -11,7 +11,16 @@ held, refuse-reason) when:
   2 spindle commanded on (spindle.0.on)
   3 spindle turning: encoder over rpm-max, or the VFD step output over
     step-vel-max, now or within the last stopped-time seconds
-  4 toolchanger busy (atc not idle)
+  4 toolchanger running a change (atc not idle and not faulted)
+
+Faulted atc (state 999, 2026-10-25): B+ works, so the drawbar can be used
+while recovering from an aborted change (ATC manual tab).  The first
+accepted press during a fault TAKES OVER the drawbar: from then on it
+follows only B+ (held = unclamped, released = clamped), ignoring an unclamp
+the atc left on when it faulted, until the atc starts a change again (any
+state other than 0 / 999 - a new M6, or a reset that resumes the change).
+Pressing B+ while the atc already has it unclamped keeps it unclamped for
+as long as B+ is held.  Without a press during a fault nothing changes.
 
 The atc's unclamp (atc-unclamp) needs the same "spindle stopped" check
 (reason 3) to START; the atc already checks the spindle is held at the
@@ -49,6 +58,7 @@ pin out bit refused "button held but not allowed";
 pin out signed refuse_reason "1 machine off 2 spindle on 3 spindle turning 4 toolchanger busy";
 pin out bit spindle_inhibit "-> spindle.0.inhibit";
 pin out bit feed_inhibit "-> motion.feed-inhibit";
+pin out bit takeover "B+ has the drawbar, atc unclamp ignored (after a press while the atc was faulted)";
 
 variable double stop_timer;
 variable int prev_manual;
@@ -56,14 +66,17 @@ variable int prev_manual;
 function _;
 
 license "GPL";
-author "Claude for the Mazak v3 config, 2026-10-24";
+author "Claude for the Mazak v3 config, 2026-10-24; B+ while faulted 2026-10-25";
 ;;
 
 #include <rtapi_math.h>
 
+#define ATC_FAULT 999
+
 FUNCTION(_) {
     int press = manual && !prev_manual;
     int reason;
+    int atc_req;
     prev_manual = manual;
 
     /* spindle stopped, continuously, for stopped-time */
@@ -72,33 +85,40 @@ FUNCTION(_) {
     } else {
         stop_timer = 0;
     }
-    stopped = stop_timer >= stopped_time;
+    stopped_set(stop_timer >= stopped_time);
 
     if (!machine_on)          reason = 1;
     else if (spindle_on)      reason = 2;
     else if (!stopped)        reason = 3;
-    else if (atc_state != 0)  reason = 4;
+    else if (atc_state != 0 && atc_state != ATC_FAULT) reason = 4;
     else                      reason = 0;
-    manual_ok = reason == 0;
+    manual_ok_set(reason == 0);
+
+    /* takeover: a press while the atc is faulted; ends when it runs again */
+    if (press && manual_ok && atc_state == ATC_FAULT) takeover_set(1);
+    if (atc_state != 0 && atc_state != ATC_FAULT) takeover_set(0);
+    atc_req = atc_unclamp && !takeover;
 
     if (!unclamp) {
         /* clamped: what may start an unclamp */
-        if (atc_unclamp && stopped) {
-            unclamp = 1;
-            manual_active = 0;
+        if (atc_req && stopped) {
+            unclamp_set(1);
+            manual_active_set(0);
         } else if (press && manual_ok) {
-            unclamp = 1;
-            manual_active = 1;
+            unclamp_set(1);
+            manual_active_set(1);
         }
     } else {
-        /* unclamped: stays open while it is still asked for */
-        if (manual_active && !manual) manual_active = 0;
-        if (!atc_unclamp && !manual_active) unclamp = 0;
+        /* unclamped: stays open while it is still asked for.  A press
+           while already open (atc unclamp) hands it to the button. */
+        if (press && manual_ok) manual_active_set(1);
+        if (manual_active && !manual) manual_active_set(0);
+        if (!atc_req && !manual_active) unclamp_set(0);
     }
 
-    refused = manual && !unclamp && reason != 0;
-    refuse_reason = refused ? reason : 0;
+    refused_set(manual && !unclamp && reason != 0);
+    refuse_reason_set(refused ? reason : 0);
 
-    spindle_inhibit = unclamp || unclamped_sensor;
-    feed_inhibit = spindle_inhibit;
+    spindle_inhibit_set(unclamp || unclamped_sensor);
+    feed_inhibit_set(spindle_inhibit);
 }

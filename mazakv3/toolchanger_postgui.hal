@@ -49,3 +49,12 @@ net tc-pot-clear        pyvcp.tc-pot-clear  =>  mag.0.pot-clear
 net tool-sensor-unclamped  =>  pyvcp.tc-drawbar-unclamped
 net tc-drawbar-ok       drawbar.0.manual-ok  =>  pyvcp.tc-drawbar-ok
 net drawbar-feed-inhibit  =>  pyvcp.tc-drawbar-inhibit
+
+# ATC manual mode (2026-10-25), see comp/atc.comp: no interlocks apart from
+# "no M6 running" and machine on - for getting the arm back after an abort.
+# Drawbar: the B+ button (atc.0.unclamp-toggle is left unconnected).
+net tc-atc-manual       pyvcp.tc-atc-manual     =>  atc.0.manual-mode
+net tc-atc-manual-ok    atc.0.manual-ok         =>  pyvcp.tc-atc-manual-ok
+net tc-arm-jog-fwd      pyvcp.tc-arm-jog-fwd    =>  atc.0.jog-fwd
+net tc-arm-jog-rev      pyvcp.tc-arm-jog-rev    =>  atc.0.jog-rev
+net J6:out              =>  pyvcp.tc-manual-arm-pos

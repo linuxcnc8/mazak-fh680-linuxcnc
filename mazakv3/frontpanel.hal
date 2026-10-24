@@ -16,7 +16,7 @@ loadrt toggle2nist count=1
 loadrt lowpass names=lowpass.feed-ovr,lowpass.rapid-ovr,lowpass.spindle-ovr
 loadrt scale names=scale.jog,scale.feed-ovr,scale.rapid-ovr,scale.spindle-ovr
 loadrt limit1 names=limit1.feed-ovr,limit1.rapid-ovr,limit1.spindle-ovr,limit1.jog
-loadrt conv_float_s32 count=3
+loadrt conv_real_sint count=3
 
 # debounce runs BEFORE the and2/or2/toggle chain that uses its outputs, so a
 # button edge goes all the way through in the same servo cycle.
@@ -43,9 +43,9 @@ addf limit1.rapid-ovr     servo-thread
 addf limit1.spindle-ovr   servo-thread
 addf limit1.jog           servo-thread
 addf jog-mux              servo-thread
-addf conv-float-s32.0 servo-thread
-addf conv-float-s32.1 servo-thread
-addf conv-float-s32.2 servo-thread
+addf conv-real-sint.0 servo-thread
+addf conv-real-sint.1 servo-thread
+addf conv-real-sint.2 servo-thread
 
 # Button debounce. UNITS ARE SERVO PERIODS: SERVO_PERIOD = 1 ms here, so 5 = 5 ms.
 # Raise it if a button double-fires, lower it if the panel feels laggy.
@@ -112,7 +112,7 @@ net jog-b-neg hm2_7i92.0.7i77.0.0.input-21 halui.axis.b.minus halui.joint.4.minu
 
 ##############override pots#################################################
 # The four knobs are pots, 0 V to field voltage (~23.7 V) on 7i77 analogin0-3.
-# Chain per pot:  analogin -> (lowpass) -> scale -> limit1 -> conv-float-s32 -> halui
+# Chain per pot:  analogin -> (lowpass) -> scale -> limit1 -> conv-real-sint -> halui
 # halui scale .01, so one override count = 1%.
 #
 # Bottom 10% of the knob is a dead zone that reads 0, so zero is easy to hit.
@@ -167,20 +167,20 @@ setp limit1.jog.max          6000
 net feed-override-scale hm2_7i92.0.7i77.0.0.analogin1 lowpass.feed-ovr.in
 net feed-ovr-filt    lowpass.feed-ovr.out scale.feed-ovr.in
 net feed-ovr-scaled  scale.feed-ovr.out   limit1.feed-ovr.in
-net feed-ovr-counts  limit1.feed-ovr.out  conv-float-s32.0.in
-net feed-override-scale-out conv-float-s32.0.out halui.feed-override.counts
+net feed-ovr-counts  limit1.feed-ovr.out  conv-real-sint.0.in
+net feed-override-scale-out conv-real-sint.0.out halui.feed-override.counts
 # rapid - analogin3
 net rapid-override-scale hm2_7i92.0.7i77.0.0.analogin3 lowpass.rapid-ovr.in
 net rapid-ovr-filt   lowpass.rapid-ovr.out scale.rapid-ovr.in
 net rapid-ovr-scaled scale.rapid-ovr.out   limit1.rapid-ovr.in
-net rapid-ovr-counts limit1.rapid-ovr.out  conv-float-s32.1.in
-net rapid-override-scale-out conv-float-s32.1.out halui.rapid-override.counts
+net rapid-ovr-counts limit1.rapid-ovr.out  conv-real-sint.1.in
+net rapid-override-scale-out conv-real-sint.1.out halui.rapid-override.counts
 # spindle - analogin2
 net spindle-override-scale hm2_7i92.0.7i77.0.0.analogin2 lowpass.spindle-ovr.in
 net spindle-ovr-filt   lowpass.spindle-ovr.out scale.spindle-ovr.in
 net spindle-ovr-scaled scale.spindle-ovr.out   limit1.spindle-ovr.in
-net spindle-ovr-counts limit1.spindle-ovr.out  conv-float-s32.2.in
-net spindle-override-scale-out conv-float-s32.2.out halui.spindle.0.override.counts
+net spindle-ovr-counts limit1.spindle-ovr.out  conv-real-sint.2.in
+net spindle-override-scale-out conv-real-sint.2.out halui.spindle.0.override.counts
 
 # jog speed - analogin0, in mm/min.
 # The knob does NOT drive halui directly. axisrc.py reads limit1.jog.out and moves
