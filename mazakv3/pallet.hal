@@ -1,0 +1,68 @@
+##########sudo halcompile --install pallet.comp (open terminal from desktop)
+
+##############loading components##############
+loadrt abs
+loadrt pallet
+loadrt timedelay
+
+##############loading components##############
+
+
+addf pallet.0 servo-thread 
+addf abs.0 servo-thread
+addf timedelay.0 servo-thread 
+
+##############loading components##############
+
+setp hm2_7i92.0.7i71.0.2.output-08 1
+setp hm2_7i92.0.7i71.0.2.output-02 1
+ 
+
+######################input sensors############
+
+
+net pallet-up-sens hm2_7i92.0.7i70.0.4.input-01 pallet.0.pallet-up-sens
+net pallet-middle-sens hm2_7i92.0.7i70.0.4.input-07 pallet.0.pallet-middle-sens
+net pallet-top-sens hm2_7i92.0.7i70.0.4.input-02 pallet.0.pallet-top-sens
+net pallet-bottom-sens hm2_7i92.0.7i70.0.4.input-05 pallet.0.pallet-bottom-sens
+net arms-toPallet-sens hm2_7i92.0.7i70.0.4.input-03 pallet.0.arms-toPallet-sens
+net arms-toHome-sens hm2_7i92.0.7i70.0.4.input-04 pallet.0.arms-toHome-sens
+net pallet-encoder-pos abs.0.in hm2_7i92.0.encoder.06.position
+net pallet-encoder-pos-abs abs.0.out pallet.0.pallet-encoder-position
+
+
+######################input sensors############
+
+
+
+######################outputs############
+
+
+
+net pallet-encoder-reset hm2_7i92.0.encoder.06.reset pallet.0.pallet-encoder-reset
+net arms-toPallet hm2_7i92.0.7i71.0.2.output-04 pallet.0.arms-toPallet
+net arms-up hm2_7i92.0.7i71.0.2.output-03 pallet.0.arms-up 
+# These three were 7i96 SSR outputs (ssr.00.out-03/04/05).  The 7i92 has no
+# SSRs, so they moved to 7i76 field outputs on sserial channel 3, keeping the
+# same output numbers.  7i76 outputs switch field power - they are not dry
+# contacts like the SSRs were - so check what each one drives.
+net pallet-cw hm2_7i92.0.7i76.0.3.output-05 pallet.0.pallet-cw
+net pallet-ccw hm2_7i92.0.7i76.0.3.output-04 pallet.0.pallet-ccw
+net estop-outcl hm2_7i92.0.7i76.0.3.output-03
+
+######################outputs############
+
+############timer stuff###########
+net timer-start pallet.0.timer-start timedelay.0.in 
+net timer-finish pallet.0.timer-finish timedelay.0.out
+setp timedelay.0.off-delay 0
+setp timedelay.0.on-delay 1
+
+
+############timer stuff###########
+
+
+
+
+
+

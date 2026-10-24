@@ -1,0 +1,381 @@
+component atc "ATC arm: swaps the tool between spindle and shifter, with interlocks, step timeouts and fault reset";
+
+description """
+The swap sequences and arm positions (0 / 100 / 418 / 500) are unchanged from
+the January 2025 version.  Added around them:
+
+Interlocks - the arm will not start a change, and stops mid-change, unless:
+  - the spindle is held at the toolchange angle (spindle-held, from spindle-orient.holding)
+  - machine Y is at the toolchange height (y-pos within tc-y-tol of tc-y)
+  - machine Z is at the toolchange position (z-pos within tc-z-tol of tc-z)
+  - the shifter has the new tool ready (tool-prepared, checked at the start only)
+  - iocontrol is still asking for the change (drops on Stop / abort)
+  - the shifter is clear of the arm, between -600 and 0 (shifter-pos)
+
+Every step has a timeout (step-timeout, not applied while debug is set).  A sensor that never arrives now
+faults instead of waiting forever.
+
+On a fault the arm is stopped where it is (atc-out-position is set to
+atc-in-position), tool-unclamp is left as it was so a tool is never dropped,
+and the comp waits in state 999.  The fault does NOT abort the program: an
+abort during M6 makes LinuxCNC record the tool change as done even though
+the arm never swapped.  M6 just waits; fix the cause and reset.  Fault pins:
+  fault        true
+  fault-step   the state it was in
+  fault-reason 1 step timeout
+               2 spindle not held at the toolchange angle
+               3 Y not at the toolchange height
+               4 tool change aborted (tool-change request dropped)
+               5 magazine didn't have the right pot ready within prep-timeout
+               6 shifter not clear of the arm (outside -600..0)
+               7 Z not at the toolchange position
+A rising edge on fault-reset clears it.  If M6 is still waiting, the atc
+retries the step that faulted (arm target restored); if the change was
+stopped (reason 4) it goes back to idle - check the tool table matches the
+spindle before the next M6 (sub_progs/toolchange.ngc refuses M6 while
+faulted).
+
+Step mode (step-mode TRUE, 2026-10-24): every arm move and drawbar
+clamp / unclamp waits for a rising edge on step-go.  While it waits,
+step-waiting is TRUE, next-arm-pos is where the arm will go and
+next-unclamp is what the drawbar output will be.  Step timeouts don't run
+while waiting, and the 90 s magazine wait is off in step mode.
+
+Slow mode: speed-in (halui.max-velocity.value, the AXIS Max Velocity
+slider) / speed-full gives a speed fraction (min-speed .. 1).  arm-maxv =
+arm-maxv-full * fraction goes to j6.limit3.maxv.  The timeouts count
+speed-weighted time (each second counts as fraction seconds), so a slow step
+gets longer and moving the slider mid-step doesn't trip it (2026-10-24 fix:
+the timeout used to be step-timeout / the speed at that moment).
+
+E-stop / machine off (2026-10-24): the stepgens stop at once but j6.limit3
+used to carry on to its target, so the arm could move when the machine came
+back on.  Now, while machine-on is FALSE and the arm is homed, the arm target
+follows the real arm position (arm-fb) and hold is TRUE (-> j6.limit3.load,
+so the limit3 output snaps to it too).  Nothing moves when the machine comes
+back on.  An M6 that was running faults with reason 4 as before.
+""";
+
+// Inputs
+pin in bit atc_change_command;
+pin in float atc_in_position;
+pin in bit tool_clamped;
+pin in bit tool_unclamped;
+pin in bit magazine_ready;
+pin in bit shifter_ready;
+pin in bit atc_home_switch;
+pin in bit atc_tool_pos_1;
+pin in bit atc_tool_pos_2;
+
+// Interlock inputs
+pin in bit spindle_held "spindle-orient.holding - spindle locked at the M19 R0 angle";
+pin in bit tool_prepared "mag.0.tool-prepared - new tool ready in the shifter";
+pin in float y_pos "joint.1.pos-fb, machine Y";
+pin in float z_pos "joint.2.pos-fb, machine Z";
+pin in float shifter_pos "J7:out - shifter must be clear (-600..0) for the arm to move";
+pin in float shifter_tol = 0.5 "shifter clear zone is -600-tol .. 0+tol";
+pin in float tc_y = 0.25 "toolchange Y height, machine coordinates";
+pin in float tc_y_tol = 0.05 "allowed Y error either side of tc-y";
+pin in float tc_z = 17.4996 "toolchange Z position, machine coordinates";
+pin in float tc_z_tol = 0.05 "allowed Z error either side of tc-z";
+pin in float step_timeout = 10 "seconds any one step may take";
+pin in float prep_timeout = 90 "seconds to wait for the magazine to have the right pot ready";
+pin in bit fault_reset "rising edge clears a fault, back to state 0";
+
+// Step / slow mode (2026-10-24)
+pin in bit step_mode "each arm move / drawbar change waits for step-go";
+pin in bit step_go "rising edge: do the next step";
+pin out bit step_waiting "waiting for step-go";
+pin out float next_arm_pos "arm target of the waiting step";
+pin out bit next_unclamp "drawbar unclamp output of the waiting step";
+pin in float speed_in = 100 "halui.max-velocity.value (unconnected = full speed)";
+pin in float speed_full = 100 "speed-in that means full speed ([TRAJ]MAX_LINEAR_VELOCITY)";
+pin in float min_speed = 0.02 "slowest speed fraction";
+pin in float arm_maxv_full = 170 "[JOINT_6]MAX_VELOCITY";
+pin out float arm_maxv "to j6.limit3.maxv";
+pin out float speed_pct "speed fraction in percent, for the panel";
+
+// E-stop hold (2026-10-24)
+pin in bit machine_on = 1 "motion.motion-enabled";
+pin in bit arm_homed "joint.6.homed - hold only once homed";
+pin in float arm_fb "joint.6.pos-fb, real arm position";
+pin out bit hold "machine off: to j6.limit3.load";
+
+// Outputs
+pin out bit atc_changed;
+pin out bit fault;
+pin out s32 fault_step;
+pin out s32 fault_reason;
+pin out float step_time "seconds in the current step";
+
+// Debugging Inputs
+pin in bit debug;
+pin io unsigned state;
+
+// Debugging outputs
+pin out bit tool_unclamp;
+pin out bit default_bit;
+pin out float atc_out_position;
+
+variable int prev_atc_change_command;
+variable int prev_fault_reset;
+variable unsigned prev_state;
+variable float saved_out;
+variable int prev_step_go;
+variable int go_armed;
+variable double work_time;
+
+function _;
+
+license "GPL";
+author "Andrew Beck 11-1-24; interlocks, timeouts and faults added 2026-10-14; Z interlock 2026-10-19; step / slow mode, E-stop hold 2026-10-24";
+;;
+
+#include <rtapi_math.h>
+
+#define ST_FAULT 999
+
+#define R_TIMEOUT     1
+#define R_SPINDLE     2
+#define R_Y_HEIGHT    3
+#define R_ABORTED     4
+#define R_NOT_PREPPED 5
+#define R_SHIFTER     6
+#define R_Z_POS       7
+
+/* arm position checks - limit3 lands on its target, but don't rely on
+   exact float equality */
+#define AT(pos) (fabs(atc_in_position - (pos)) < 0.01)
+
+#define TRIP(reason) do { \
+    saved_out = atc_out_position; \
+    fault = 1; \
+    fault_step = state; \
+    fault_reason = (reason); \
+    atc_out_position = atc_in_position; \
+    state = ST_FAULT; \
+} while (0)
+
+FUNCTION(_) {
+	int tool_change;
+	int y_ok = fabs(y_pos - tc_y) <= tc_y_tol;
+	int z_ok = fabs(z_pos - tc_z) <= tc_z_tol;
+	int shifter_ok = shifter_pos >= -600 - shifter_tol && shifter_pos <= shifter_tol;
+	double speed = speed_full > 0 ? speed_in / speed_full : 1;
+	unsigned snap_state;
+	float snap_out;
+	int snap_unclamp, snap_changed;
+
+	/* slow mode */
+	if (speed > 1) speed = 1;
+	if (speed < min_speed) speed = min_speed;
+	if (speed <= 0) speed = 1;
+	arm_maxv = arm_maxv_full * speed;
+	speed_pct = speed * 100;
+
+	/* step mode: Next only counts while a step is waiting */
+	if (!step_mode) go_armed = 0;
+	else if (step_go && !prev_step_go && step_waiting) go_armed = 1;
+	prev_step_go = step_go;
+	step_waiting = 0;
+
+	/* change request: level, not edge, so a reset can resume a waiting M6.
+	   atc-changed is held until iocontrol drops the request. */
+	if (!atc_change_command && state == 0) atc_changed = 0;
+	tool_change = atc_change_command && !atc_changed;
+	prev_atc_change_command = atc_change_command;
+
+	/* a change that was stopped (Stop / E-stop / abort) while faulted */
+	if (state == ST_FAULT && !atc_change_command) fault_reason = R_ABORTED;
+
+	/* fault reset (rising edge): M6 still waiting -> retry the step that
+	   faulted with the arm target it had; otherwise back to idle */
+	if (fault_reset && !prev_fault_reset && state == ST_FAULT) {
+		if (atc_change_command && fault_reason != R_ABORTED) {
+			state = fault_step;
+			atc_out_position = saved_out;
+		} else {
+			state = 0;
+		}
+		fault = 0;
+		fault_step = 0;
+		fault_reason = 0;
+	}
+	prev_fault_reset = fault_reset;
+
+	/* step timer */
+	if (state != prev_state) { step_time = 0; work_time = 0; }
+	else { step_time += fperiod; work_time += fperiod * speed; }
+	prev_state = state;
+
+	/* checks that apply for the whole change, once it has started */
+	if (state != 0 && state != ST_FAULT) {
+		if (!atc_change_command)            TRIP(R_ABORTED);
+		else if (!spindle_held)             TRIP(R_SPINDLE);
+		else if (!y_ok)                     TRIP(R_Y_HEIGHT);
+		else if (!z_ok)                     TRIP(R_Z_POS);
+		/* the shifter moves while the magazine swaps pots (state 2) */
+		else if (state != 2 && !shifter_ok) TRIP(R_SHIFTER);
+		else if (state == 2 && !debug && !step_mode && work_time > prep_timeout)
+		                                    TRIP(R_NOT_PREPPED);
+		else if (state != 2 && !debug && work_time > step_timeout)
+		                                    TRIP(R_TIMEOUT);
+	}
+
+	/* snapshot for step mode */
+	snap_state = state;
+	snap_out = atc_out_position;
+	snap_unclamp = tool_unclamp;
+	snap_changed = atc_changed;
+
+	switch(state) {
+		case 0:
+			if (tool_change == 1) {
+				atc_changed = 0;
+				/* checks before the arm moves at all */
+				if (!spindle_held)        TRIP(R_SPINDLE);
+				else if (!y_ok)           TRIP(R_Y_HEIGHT);
+				else if (!z_ok)           TRIP(R_Z_POS);
+				else if (!debug) {
+					/* wait for the magazine if it is still fetching */
+					state = tool_prepared ? 1 : 2;
+				}
+			}
+			break;
+
+		case 2:
+			/* M6 came while the magazine was still swapping pots */
+			if (tool_prepared && shifter_ok) state = 1;
+			break;
+
+		case 1:
+			/* target can be a hair off 0 / 500 after an E-stop hold */
+			if (AT(0) && fabs(atc_out_position) < 0.01) {
+				atc_out_position = 0;
+				state = 10;
+			}
+			if (AT(500) && fabs(atc_out_position - 500) < 0.01) {
+				atc_out_position = 500;
+				state = 110;
+			}
+			break;
+
+		/* ---- arm at 0: swap via 100 -> 418 -> 500 ---- */
+		case 10:
+			if (AT(0) && atc_home_switch) {
+				atc_out_position = 100;
+				if (!debug) state = 20;
+			}
+			break;
+
+		case 20:
+			if (AT(100) && atc_tool_pos_1) {
+				tool_unclamp = 1;
+				if (!debug) state = 30;
+			}
+			break;
+
+		case 30:
+			if (tool_unclamped && !tool_clamped) {
+				atc_out_position = 418;
+				if (!debug) state = 40;
+			}
+			break;
+
+		case 40:
+			if (AT(418) && atc_tool_pos_2) {
+				tool_unclamp = 0;
+				if (!debug) state = 45;
+			}
+			break;
+
+		case 45:
+			if (tool_clamped && !tool_unclamped) {
+				if (!debug) state = 50;
+			}
+			break;
+
+		case 50:
+			atc_out_position = 500;
+			if (AT(500) && atc_home_switch) {
+				atc_changed = 1;
+				state = 0;
+			}
+			break;
+
+		/* ---- arm at 500: swap via 418 -> 100 -> 0 ---- */
+		case 110:
+			if (AT(500)) {
+				atc_out_position = 418;
+				if (!debug) state = 120;
+			}
+			break;
+
+		case 120:
+			if (AT(418) && atc_tool_pos_2) {
+				tool_unclamp = 1;
+				if (!debug) state = 130;
+			}
+			break;
+
+		case 130:
+			if (tool_unclamped && !tool_clamped) {
+				atc_out_position = 100;
+				if (!debug) state = 140;
+			}
+			break;
+
+		case 140:
+			if (AT(100) && atc_tool_pos_1) {
+				tool_unclamp = 0;
+				if (!debug) state = 145;
+			}
+			break;
+
+		case 145:
+			if (tool_clamped && !tool_unclamped) {
+				if (!debug) state = 150;
+			}
+			break;
+
+		case 150:
+			atc_out_position = 0;
+			if (AT(0) && atc_home_switch) {
+				atc_changed = 1;
+				state = 0;
+			}
+			break;
+
+		case ST_FAULT:
+			/* arm held where it stopped; wait for fault-reset */
+			break;
+
+		default:
+			default_bit = 1;
+	}
+
+	/* step mode: a step that moves the arm or the drawbar is held back
+	   (everything put back as it was) until Next is pressed */
+	if (step_mode && state != ST_FAULT
+	        && (atc_out_position != snap_out || tool_unclamp != snap_unclamp)) {
+		if (go_armed) {
+			go_armed = 0;
+		} else {
+			next_arm_pos = atc_out_position;
+			next_unclamp = tool_unclamp;
+			state = snap_state;
+			atc_out_position = snap_out;
+			tool_unclamp = snap_unclamp;
+			atc_changed = snap_changed;
+			step_waiting = 1;
+			/* re-enter the state next cycle: timer from 0, one-shots run again */
+			prev_state = ~0u;
+			step_time = 0;
+			work_time = 0;
+		}
+	}
+
+	/* E-stop / machine off: target = where the arm really is */
+	hold = !machine_on && arm_homed;
+	if (hold) atc_out_position = arm_fb;
+}

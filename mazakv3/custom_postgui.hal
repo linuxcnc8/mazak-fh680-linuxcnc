@@ -1,0 +1,25 @@
+# Include your custom_postgui HAL commands here
+# This file will not be overwritten when you run PNCconf again
+
+
+########extra stuff i think needs to be loaded after linuxcnc starts up#######
+net joint-5-mag-position mag.0.tool-prep-pocket-out 
+net J6:out atc.0.atc-in-position
+net joint-6-atc-position j6.limit3.in atc.0.atc-out-position 
+
+########extra stuff i think needs to be loaded after linuxcnc starts up#######
+
+
+ 
+
+# Auto tool measure side panel (toolmeasure.xml), added 2026-10-11
+source toolmeasure_postgui.hal
+
+# Toolchanger tab of the side panel (status, fault reset, put pot back), added 2026-10-14
+source toolchanger_postgui.hal
+
+# Jog speeds = the AXIS jog sliders (the knob moves both, see axisrc.py).
+# frontpanel.hal picks one of these for halui depending on which jog button is
+# held. axisui pins only exist once the GUI is up.
+net jog-lspeed <= axisui.jog-speed     # mm/min slider  - X Y Z
+net jog-aspeed <= axisui.jog-aspeed    # deg/min slider - A B

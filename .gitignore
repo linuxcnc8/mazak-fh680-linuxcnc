@@ -1,0 +1,25 @@
+# Machine state - changes every run / tool change, not config
+linuxcnc.var
+linuxcnc.var.*
+position.txt
+mag_state.txt
+tool.tbl
+*.bak
+autosave.halscope
+halshow.preferences
+.halshow_watchlist_backup
+
+# Local copies and work in progress (git history replaces these)
+backups/
+pending-*/
+
+# Build output
+__pycache__/
+*.pyc
+*.so
+*.o
+
+# Screenshots and third-party manuals (Mesa's PDFs aren't ours to publish)
+Screenshot_*.png
+*.pdf
+.claude/

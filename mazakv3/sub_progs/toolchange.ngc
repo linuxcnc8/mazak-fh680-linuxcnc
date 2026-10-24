@@ -1,0 +1,47 @@
+; M6 remap - [RS274NGC] REMAP=M6 modalgroup=6 ngc=toolchange
+; Mazak FH680 (horizontal, Y is vertical).
+;
+;  1  spindle off, then M19 R0: orient and lock the spindle at the
+;     toolchange angle (ORIENT_OFFSET in the ini).  Faults if it can't.
+;  2  Z to the toolchange position, then Y to the toolchange height,
+;     both in machine coordinates.
+;  2b wait (M66 on motion.digital-in-14) for the magazine's pot - see below
+;  3  M6 inside its own remap runs the built-in change: iocontrol ->
+;     atc comp.  The atc refuses to move unless the spindle is held and
+;     Y and Z are in position, and faults/aborts on any step that times out.
+;  4  M5 releases the spindle lock (free 1 s after it has stopped).
+;
+; The Y height and Z position come from [ATC]TC_Y and TC_Z in the ini
+; (one number each for the move and the atc interlock).
+
+o<toolchange> sub
+  ; refuse while the atc is faulted - an interrupted change may have left
+  ; the tool table out of step with what is really in the spindle
+  o90 if [#<_hal[atc.0.fault]> GT 0]
+    (abort, ATC fault - fix it and reset. If a change was interrupted check the tool table)
+  o90 endif
+  o100 if [#<_selected_tool> EQ #<_current_tool>]
+    ; same tool already in the spindle - nothing to swap
+  o100 else
+    M5
+    M19 R0 Q20
+    G53 G0 Z#<_ini[ATC]TC_Z>
+    G53 G0 Y#<_ini[ATC]TC_Y>
+    ; wait HERE for the magazine to have the right pot at the change
+    ; position (mag.0.tool-prepared -> motion.digital-in-14), before the
+    ; built-in M6 starts the iocontrol tool-change handshake.  LinuxCNC
+    ; 2.10.0~pre1 hangs task if you Abort while that handshake is pending
+    ; (fixed in v2.10.0-pre2, see LINUXCNC_UPGRADE_NOTES.md); an Abort
+    ; during this M66 wait is safe.  1 s waits, no overall timeout (step
+    ; mode can take as long as it likes); stops on a magazine fault.
+    o110 do
+      M66 P14 L3 Q1
+      o111 if [#<_hal[mag.0.toolchanger-faulted]> GT 0]
+        (abort, Magazine fault - pot not ready. Reset it and run again)
+      o111 endif
+    o110 while [#5399 LT 0]
+    M6
+    M5
+  o100 endif
+o<toolchange> endsub
+M2

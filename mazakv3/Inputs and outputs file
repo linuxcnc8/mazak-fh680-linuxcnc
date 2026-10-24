@@ -1,0 +1,144 @@
+IO pinouts
+(checked against the HAL files 2026-10-11 - these are the pins actually in use)
+
+home and limit switches - 7i77 inputs (all wired normally closed, HAL uses -not)
+
+x axis limit   hm2_7i92.0.7i77.0.0.input-30    mazakv3.hal
+y axis limit   hm2_7i92.0.7i77.0.0.input-31    mazakv3.hal
+z axis limit   hm2_7i92.0.7i77.0.0.input-24    mazakv3.hal
+x axis home    hm2_7i92.0.7i77.0.0.input-25    mazakv3.hal
+y axis home    hm2_7i92.0.7i77.0.0.input-26    mazakv3.hal
+z axis home    hm2_7i92.0.7i77.0.0.input-27    mazakv3.hal
+a axis home    hm2_7i92.0.7i70.0.4.input-25    mazakv3.hal  (on the 7i70, not the 7i77)
+
+carousel home  hm2_7i92.0.7i70.0.4.input-09    1extrajoint.hal
+atc home       hm2_7i92.0.7i70.0.4.input-10    1extrajoint.hal
+shifter home   hm2_7i92.0.7i70.0.4.input-15    1extrajoint.hal
+
+sensors - 7i70 inputs
+
+pallet up            hm2_7i92.0.7i70.0.4.input-01   pallet.hal
+pallet top           hm2_7i92.0.7i70.0.4.input-02   pallet.hal
+arms to pallet       hm2_7i92.0.7i70.0.4.input-03   pallet.hal
+arms to home         hm2_7i92.0.7i70.0.4.input-04   pallet.hal
+pallet bottom        hm2_7i92.0.7i70.0.4.input-05   pallet.hal
+pallet middle        hm2_7i92.0.7i70.0.4.input-07   pallet.hal
+atc tool pos 1       hm2_7i92.0.7i70.0.4.input-11   toolchanger.hal
+atc tool pos 2       hm2_7i92.0.7i70.0.4.input-12   toolchanger.hal
+shifter clamped      hm2_7i92.0.7i70.0.4.input-16   toolchanger.hal
+shifter unclamped    hm2_7i92.0.7i70.0.4.input-17   toolchanger.hal
+tool clamped         hm2_7i92.0.7i70.0.4.input-18   toolchanger.hal
+tool unclamped       hm2_7i92.0.7i70.0.4.input-19   toolchanger.hal
+estop external       hm2_7i92.0.7i70.0.4.input-47   custom.hal
+
+outputs
+
+hydraulic pump       hm2_7i92.0.7i77.0.0.output-00  custom.hal (machine-is-on)
+tool unclamp         hm2_7i92.0.7i71.0.2.output-01  toolchanger.hal
+(always on)          hm2_7i92.0.7i71.0.2.output-02  pallet.hal setp 1 - unknown use
+arms up              hm2_7i92.0.7i71.0.2.output-03  pallet.hal
+arms to pallet       hm2_7i92.0.7i71.0.2.output-04  pallet.hal
+lube pump            hm2_7i92.0.7i71.0.2.output-06  custom.hal (ladder out-01)
+(always on)          hm2_7i92.0.7i71.0.2.output-08  pallet.hal setp 1 - unknown use
+shifter clamp        hm2_7i92.0.7i71.0.2.output-09  toolchanger.hal
+shifter unclamp      hm2_7i92.0.7i71.0.2.output-10  toolchanger.hal
+estop-outcl          hm2_7i92.0.7i76.0.3.output-03  pallet.hal
+pallet ccw           hm2_7i92.0.7i76.0.3.output-04  pallet.hal
+pallet cw            hm2_7i92.0.7i76.0.3.output-05  pallet.hal
+
+in the old list but not in any HAL file yet - pin unknown
+
+y axis brake
+4 axis table unclamp
+pallet unclamp
+spindle oil and air mist
+
+notes
+
+pallet change location x 554mm from end of rail to bearing block edge on control side -497.36 to home position
+
+IO list probably 7i71 output card
+
+shifter inputs
+
+16 out
+17  in
+
+shifter outputs
+
+09 extend
+10 retract
+
+
+
+
+
+
+
+
+
+
+front panel inputs
+
+7I77 INPUTS  (all checked by button test 2026-10-11 - correct)
+
+
+spindle fw 10
+spindle off 13
+
+pause 08
+program start 05
+program stop 22
+
+overrides - potentiometers, 0-24V analog on 7i77 analogin0-3
+(they share field inputs 0-3, so the input-NN bit just flips at a threshold)
+
+feed 1
+rapid 3
+spindle 2
+jog 0
+
+coolant switch up 29
+coolant switch down 20
+
+air blast switch up 19
+air blast switch down 06
+
+jogging  buttons
+
+Z+ 11
+Z- 09
+X+ 12
+X- 14
+Y+ 28
+Y- 23
+A+ 18
+A- 15
+B+ 07
+B- 21
+
+
+MPG buttons
+
+7i76 field io starting at 04
+
+NOTE ENCODER COUNTER ON 7I77 ENCODER 0
+
+X 05
+Y 04
+Z 06
+4 07
+5 08
+6 09
+X10 10
+X100 11
+
+
+
+
+Tool changer notes
+
+
+joint 7 is tool swap arm
+joint 6 tool arm
+joint 5 is magazine

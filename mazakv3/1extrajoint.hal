@@ -1,0 +1,282 @@
+# 1extrajoint demo
+# immediate homing -- jog joint4 to make a motor-offset before homing
+
+#net joint-5-mag-position classicladder.0.floatout-00 j5.limit3.in 
+#in post gui hal file^
+#--------------------------------------------
+# extra joint (joint5)
+
+##################homing##########################
+net car-home-switch joint.5.home-sw-in hm2_7i92.0.7i70.0.4.input-09
+
+
+setp   pid.car.Pgain     [JOINT_5]P
+setp   pid.car.Igain     [JOINT_5]I
+setp   pid.car.Dgain     [JOINT_5]D
+setp   pid.car.bias      [JOINT_5]BIAS
+setp   pid.car.FF0       [JOINT_5]FF0
+setp   pid.car.FF1       [JOINT_5]FF1
+setp   pid.car.FF2       [JOINT_5]FF2
+setp   pid.car.deadband  [JOINT_5]DEADBAND
+setp   pid.car.maxoutput [JOINT_5]MAX_OUTPUT
+setp   pid.car.error-previous-target true
+# This setting is to limit bogus stepgen
+# velocity corrections caused by position
+# feedback sample time jitter.
+setp   pid.car.maxerror 0.012700
+
+net car-index-enable  =>  pid.car.index-enable
+net car-enable        =>  pid.car.enable
+net car-pos-cmd       =>  pid.car.command
+net car-pos-fb        =>  pid.car.feedback
+net car-output        <=  pid.car.output
+
+# Step Gen signals/setup
+
+setp   hm2_7i92.0.stepgen.00.dirsetup        [JOINT_5]DIRSETUP
+setp   hm2_7i92.0.stepgen.00.dirhold         [JOINT_5]DIRHOLD
+setp   hm2_7i92.0.stepgen.00.steplen         [JOINT_5]STEPLEN
+setp   hm2_7i92.0.stepgen.00.stepspace       [JOINT_5]STEPSPACE
+setp   hm2_7i92.0.stepgen.00.position-scale  [JOINT_5]STEP_SCALE
+setp   hm2_7i92.0.stepgen.00.step_type        0
+setp   hm2_7i92.0.stepgen.00.control-type     1
+setp   hm2_7i92.0.stepgen.00.maxaccel         [JOINT_5]STEPGEN_MAXACCEL
+setp   hm2_7i92.0.stepgen.00.maxvel           [JOINT_5]STEPGEN_MAXVEL
+
+# ---closedloop stepper signals---
+
+net car-pos-cmd    <= joint.5.motor-pos-cmd
+net car-vel-cmd    <= joint.5.vel-cmd
+net car-output     => hm2_7i92.0.stepgen.00.velocity-cmd
+net car-pos-fb     <= hm2_7i92.0.stepgen.00.position-fb
+net car-pos-fb     => joint.5.motor-pos-fb
+net car-enable     <= joint.5.amp-enable-out
+net car-enable     => hm2_7i92.0.stepgen.00.enable
+
+
+
+
+
+
+
+#-----------------------------------------------------------
+# motion planner for extra joint (joint4)
+loadrt limit3 names=j5.limit3,j6.limit3,j7.limit3
+
+# These constraints apply to homing managed by
+# LinuxCNC and post-homing managed by the limit3 component:
+setp j5.limit3.min    [JOINT_5]MIN_LIMIT
+setp j5.limit3.max    [JOINT_5]MAX_LIMIT
+setp j5.limit3.maxv   [JOINT_5]MAX_VELOCITY
+setp j5.limit3.maxa   [JOINT_5]MAX_ACCELERATION
+
+addf j5.limit3 servo-thread
+
+net  J5:out <= j5.limit3.out
+net  J5:out => joint.5.posthome-cmd
+
+net  J5:enable <= joint.5.homed
+net  J5:enable => j5.limit3.enable
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################atc arm###############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#net joint-6-atc-position classicladder.0.floatout-01 j6.limit3.in 
+#in post gui hal file^
+#--------------------------------------------
+# extra joint (joint6)
+
+
+##################homing##########################
+net atc-home-switch joint.6.home-sw-in hm2_7i92.0.7i70.0.4.input-10
+
+
+setp   pid.atc.Pgain     [JOINT_6]P
+setp   pid.atc.Igain     [JOINT_6]I
+setp   pid.atc.Dgain     [JOINT_6]D
+setp   pid.atc.bias      [JOINT_6]BIAS
+setp   pid.atc.FF0       [JOINT_6]FF0
+setp   pid.atc.FF1       [JOINT_6]FF1
+setp   pid.atc.FF2       [JOINT_6]FF2
+setp   pid.atc.deadband  [JOINT_6]DEADBAND
+setp   pid.atc.maxoutput [JOINT_6]MAX_OUTPUT
+setp   pid.atc.error-previous-target true
+# This setting is to limit bogus stepgen
+# velocity corrections caused by position
+# feedback sample time jitter.
+setp   pid.atc.maxerror 0.012700
+
+net atc-index-enable  =>  pid.atc.index-enable
+net atc-enable        =>  pid.atc.enable
+net atc-pos-cmd       =>  pid.atc.command
+net atc-pos-fb        =>  pid.atc.feedback
+net atc-output        <=  pid.atc.output
+
+# Step Gen signals/setup
+
+setp   hm2_7i92.0.stepgen.01.dirsetup        [JOINT_6]DIRSETUP
+setp   hm2_7i92.0.stepgen.01.dirhold         [JOINT_6]DIRHOLD
+setp   hm2_7i92.0.stepgen.01.steplen         [JOINT_6]STEPLEN
+setp   hm2_7i92.0.stepgen.01.stepspace       [JOINT_6]STEPSPACE
+setp   hm2_7i92.0.stepgen.01.position-scale  [JOINT_6]STEP_SCALE
+setp   hm2_7i92.0.stepgen.01.step_type        0
+setp   hm2_7i92.0.stepgen.01.control-type     1
+setp   hm2_7i92.0.stepgen.01.maxaccel         [JOINT_6]STEPGEN_MAXACCEL
+setp   hm2_7i92.0.stepgen.01.maxvel           [JOINT_6]STEPGEN_MAXVEL
+
+# ---closedloop stepper signals---
+
+net atc-pos-cmd    <= joint.6.motor-pos-cmd
+net atc-vel-cmd    <= joint.6.vel-cmd
+net atc-output     => hm2_7i92.0.stepgen.01.velocity-cmd
+net atc-pos-fb     <= hm2_7i92.0.stepgen.01.position-fb
+net atc-pos-fb     => joint.6.motor-pos-fb
+net atc-enable     <= joint.6.amp-enable-out
+net atc-enable     => hm2_7i92.0.stepgen.01.enable
+
+
+
+# These constraints apply to homing managed by
+# LinuxCNC and post-homing managed by the limit3 component:
+setp j6.limit3.min    [JOINT_6]MIN_LIMIT
+setp j6.limit3.max    [JOINT_6]MAX_LIMIT
+setp j6.limit3.maxv   [JOINT_6]MAX_VELOCITY
+setp j6.limit3.maxa   [JOINT_6]MAX_ACCELERATION
+
+
+
+
+addf j6.limit3 servo-thread
+
+net  J6:out <= j6.limit3.out
+net  J6:out => joint.6.posthome-cmd
+
+net  J6:enable <= joint.6.homed
+net  J6:enable => j6.limit3.enable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################shifter arm###############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#net joint-7-shifter-position classicladder.0.floatout-02 j7.limit3.in 
+#in post gui hal file^
+#--------------------------------------------
+# extra joint (joint7)
+
+
+##################homing##########################
+net shifter-home-switch joint.7.home-sw-in hm2_7i92.0.7i70.0.4.input-15
+setp   pid.shifter.Pgain     [JOINT_7]P
+setp   pid.shifter.Igain     [JOINT_7]I
+setp   pid.shifter.Dgain     [JOINT_7]D
+setp   pid.shifter.bias      [JOINT_7]BIAS
+setp   pid.shifter.FF0       [JOINT_7]FF0
+setp   pid.shifter.FF1       [JOINT_7]FF1
+setp   pid.shifter.FF2       [JOINT_7]FF2
+setp   pid.shifter.deadband  [JOINT_7]DEADBAND
+setp   pid.shifter.maxoutput [JOINT_7]MAX_OUTPUT
+setp   pid.shifter.error-previous-target true
+# This setting is to limit bogus stepgen
+# velocity corrections caused by position
+# feedback sample time jitter.
+setp   pid.shifter.maxerror 0.012700
+
+net shifter-index-enable  =>  pid.shifter.index-enable
+net shifter-enable        =>  pid.shifter.enable
+net shifter-pos-cmd       =>  pid.shifter.command
+net shifter-pos-fb        =>  pid.shifter.feedback
+net shifter-output        <=  pid.shifter.output
+
+# Step Gen signals/setup
+
+setp   hm2_7i92.0.stepgen.02.dirsetup        [JOINT_7]DIRSETUP
+setp   hm2_7i92.0.stepgen.02.dirhold         [JOINT_7]DIRHOLD
+setp   hm2_7i92.0.stepgen.02.steplen         [JOINT_7]STEPLEN
+setp   hm2_7i92.0.stepgen.02.stepspace       [JOINT_7]STEPSPACE
+setp   hm2_7i92.0.stepgen.02.position-scale  [JOINT_7]STEP_SCALE
+setp   hm2_7i92.0.stepgen.02.step_type        0
+setp   hm2_7i92.0.stepgen.02.control-type     1
+setp   hm2_7i92.0.stepgen.02.maxaccel         [JOINT_7]STEPGEN_MAXACCEL
+setp   hm2_7i92.0.stepgen.02.maxvel           [JOINT_7]STEPGEN_MAXVEL
+
+# ---closedloop stepper signals---
+
+net shifter-pos-cmd    <= joint.7.motor-pos-cmd
+net shifter-vel-cmd    <= joint.7.vel-cmd
+net shifter-output     => hm2_7i92.0.stepgen.02.velocity-cmd
+net shifter-pos-fb     <= hm2_7i92.0.stepgen.02.position-fb
+net shifter-pos-fb     => joint.7.motor-pos-fb
+net shifter-enable     <= joint.7.amp-enable-out
+net shifter-enable     => hm2_7i92.0.stepgen.02.enable
+
+
+
+# These constraints apply to homing managed by
+# LinuxCNC and post-homing managed by the limit3 component:
+setp j7.limit3.min    [JOINT_7]MIN_LIMIT
+setp j7.limit3.max    [JOINT_7]MAX_LIMIT
+setp j7.limit3.maxv   [JOINT_7]MAX_VELOCITY
+setp j7.limit3.maxa   [JOINT_7]MAX_ACCELERATION
+
+
+
+
+addf j7.limit3 servo-thread
+
+net  J7:out <= j7.limit3.out
+net  J7:out => joint.7.posthome-cmd
+
+net  J7:enable <= joint.7.homed
+net  J7:enable => j7.limit3.enable
+

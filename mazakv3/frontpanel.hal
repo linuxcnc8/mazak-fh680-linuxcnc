@@ -1,0 +1,210 @@
+#custom front panel hal file
+# Mazak front panel on the 7i77 field inputs. Copied from the 7i84 panel block
+# in ../../cnc_mill_linear_rail/custom.hal (2026-10-11) and re-pinned.
+# Every pin below was checked with a button-press test on 2026-10-11.
+#
+# The halui ends of most signals are already netted in mazakv3.hal:422-444
+# (jog-x-pos, spindle-manual-cw, jog-speed ...), this file only adds the
+# panel side. A and B jog signals are new here.
+
+loadrt debounce cfg=3
+loadrt and2 count=4
+loadrt or2 count=4
+loadrt mux2 names=jog-mux
+loadrt toggle count=1
+loadrt toggle2nist count=1
+loadrt lowpass names=lowpass.feed-ovr,lowpass.rapid-ovr,lowpass.spindle-ovr
+loadrt scale names=scale.jog,scale.feed-ovr,scale.rapid-ovr,scale.spindle-ovr
+loadrt limit1 names=limit1.feed-ovr,limit1.rapid-ovr,limit1.spindle-ovr,limit1.jog
+loadrt conv_float_s32 count=3
+
+# debounce runs BEFORE the and2/or2/toggle chain that uses its outputs, so a
+# button edge goes all the way through in the same servo cycle.
+addf debounce.0 servo-thread
+addf and2.0 servo-thread
+addf and2.1 servo-thread
+addf and2.2 servo-thread
+addf and2.3 servo-thread
+addf or2.0 servo-thread
+addf or2.1 servo-thread
+addf or2.2 servo-thread
+addf or2.3 servo-thread
+addf toggle.0 servo-thread
+addf toggle2nist.0 servo-thread
+addf lowpass.feed-ovr     servo-thread
+addf lowpass.rapid-ovr    servo-thread
+addf lowpass.spindle-ovr  servo-thread
+addf scale.feed-ovr       servo-thread
+addf scale.rapid-ovr      servo-thread
+addf scale.spindle-ovr    servo-thread
+addf scale.jog            servo-thread
+addf limit1.feed-ovr      servo-thread
+addf limit1.rapid-ovr     servo-thread
+addf limit1.spindle-ovr   servo-thread
+addf limit1.jog           servo-thread
+addf jog-mux              servo-thread
+addf conv-float-s32.0 servo-thread
+addf conv-float-s32.1 servo-thread
+addf conv-float-s32.2 servo-thread
+
+# Button debounce. UNITS ARE SERVO PERIODS: SERVO_PERIOD = 1 ms here, so 5 = 5 ms.
+# Raise it if a button double-fires, lower it if the panel feels laggy.
+setp debounce.0.delay 5
+
+
+##############program buttons###############################################
+# Filter map: debounce.0.0 = pause/resume, .1 = cycle start (run/step), .2 = stop
+#
+# Cycle start while idle            -> runs the program
+# Pause while running               -> pauses
+# Cycle start while paused          -> single steps
+# Pause while paused                -> resumes normal running
+
+# Pause/Resume - 7i77 input-08
+net pause-resume-raw debounce.0.0.in <= hm2_7i92.0.7i77.0.0.input-08
+net pause-resume-btn and2.0.in0 and2.1.in0 <= debounce.0.0.out
+net pause-on toggle2nist.0.is-on and2.0.in1 and2.3.in1 <= halui.program.is-paused
+net run-on and2.1.in1 <= halui.program.is-running
+net pause-sig or2.0.in0 <= and2.0.out
+net resume-sig or2.0.in1 <= and2.1.out
+net toggle-ok toggle.0.in <= or2.0.out
+net togglesig toggle2nist.0.in <= toggle.0.out
+net toggleon halui.program.pause <= toggle2nist.0.on
+net toggleoff halui.program.resume <= toggle2nist.0.off
+
+# Cycle start (run/step) - 7i77 input-05
+net run-step-raw debounce.0.1.in <= hm2_7i92.0.7i77.0.0.input-05
+net run-step-btn and2.2.in0 and2.3.in0 <= debounce.0.1.out
+net idle-on and2.2.in1 <= halui.program.is-idle
+net run-sig halui.mode.auto halui.program.run <= and2.2.out
+net step-sig halui.program.step <= and2.3.out
+
+# Program stop - 7i77 input-22. The filter can only DELAY a stop (by 5 ms).
+# To make stop unfiltered, replace the two lines with:
+#     net cycle-stop halui.program.stop hm2_7i92.0.7i77.0.0.input-22
+net cycle-stop-raw debounce.0.2.in <= hm2_7i92.0.7i77.0.0.input-22
+net cycle-stop halui.program.stop <= debounce.0.2.out
+
+
+##############spindle buttons###############################################
+# halui ends are in mazakv3.hal:439-441
+net spindle-manual-cw   hm2_7i92.0.7i77.0.0.input-10
+net spindle-manual-stop hm2_7i92.0.7i77.0.0.input-13
+
+
+##############jog buttons###################################################
+# halui ends for X Y Z are in mazakv3.hal:423-434 (axis pins, work once homed).
+# The joint pins are added too so the buttons also jog before homing; halui
+# ignores whichever of the two does not match the current mode.
+net jog-x-pos hm2_7i92.0.7i77.0.0.input-12 halui.joint.0.plus
+net jog-x-neg hm2_7i92.0.7i77.0.0.input-14 halui.joint.0.minus
+net jog-y-pos hm2_7i92.0.7i77.0.0.input-28 halui.joint.1.plus
+net jog-y-neg hm2_7i92.0.7i77.0.0.input-23 halui.joint.1.minus
+net jog-z-pos hm2_7i92.0.7i77.0.0.input-11 halui.joint.2.plus
+net jog-z-neg hm2_7i92.0.7i77.0.0.input-09 halui.joint.2.minus
+net jog-a-pos hm2_7i92.0.7i77.0.0.input-18 halui.axis.a.plus  halui.joint.3.plus
+net jog-a-neg hm2_7i92.0.7i77.0.0.input-15 halui.axis.a.minus halui.joint.3.minus
+# B+ (input-07) is the drawbar manual unclamp button for now (2026-10-24),
+# netted in toolchanger.hal.  B is unhooked.  Old line:
+#net jog-b-pos hm2_7i92.0.7i77.0.0.input-07 halui.axis.b.plus  halui.joint.4.plus
+net jog-b-neg hm2_7i92.0.7i77.0.0.input-21 halui.axis.b.minus halui.joint.4.minus
+
+
+##############override pots#################################################
+# The four knobs are pots, 0 V to field voltage (~23.7 V) on 7i77 analogin0-3.
+# Chain per pot:  analogin -> (lowpass) -> scale -> limit1 -> conv-float-s32 -> halui
+# halui scale .01, so one override count = 1%.
+#
+# Bottom 10% of the knob is a dead zone that reads 0, so zero is easy to hit.
+# The usable span is 2.35 V .. 23.5 V (full scale taken as 23.5 V so the top
+# of the pot always reaches the max even with field voltage sag):
+#   gain   = max / 21.15 V
+#   offset = -gain * 2.35 V  (+0.5 so the float->s32 truncation rounds to nearest)
+#   limit1 clamps the result to 0 .. max (+0.4 for the rounding offset)
+#     feed     0-200%  (MAX_FEED_OVERRIDE 2)         gain 9.456265  offset -21.722222
+#     rapid    0-100%                                gain 4.728132  offset -10.611111
+#     spindle  0-140%  (MIN 0 / MAX 1.4 in the ini)  gain 6.619385  offset -15.055556
+#     jog      0-6000 mm/min ([TRAJ]MAX_LINEAR_VELOCITY 100 mm/s)
+#                                                    gain 283.687943 offset -666.666667
+# To change the dead zone, recompute with a different start voltage.
+#
+# Check the full scale once: turn a pot to max and read it:
+#     halcmd show pin hm2_7i92.0.7i77.0.0.analogin1
+# If you change MAX_FEED_OVERRIDE, the spindle max or the max velocity, redo
+# the gain, offset and limit max for that knob.
+#
+# lowpass gain 0.01 = ~100 ms time constant at 1 ms servo period, stops the
+# override number jittering. Raise for a snappier pot, lower for steadier.
+setp halui.feed-override.direct-value 1
+setp halui.feed-override.scale .01
+setp halui.rapid-override.direct-value 1
+setp halui.rapid-override.scale .01
+setp halui.spindle.0.override.direct-value 1
+setp halui.spindle.0.override.scale .01
+
+setp lowpass.feed-ovr.gain     0.01
+setp lowpass.rapid-ovr.gain    0.01
+setp lowpass.spindle-ovr.gain  0.01
+setp scale.feed-ovr.gain       9.456265
+setp scale.feed-ovr.offset     -21.722222
+setp scale.rapid-ovr.gain      4.728132
+setp scale.rapid-ovr.offset    -10.611111
+setp scale.spindle-ovr.gain    6.619385
+setp scale.spindle-ovr.offset  -15.055556
+setp scale.jog.gain            283.687943
+setp scale.jog.offset          -666.666667
+
+setp limit1.feed-ovr.min     0
+setp limit1.feed-ovr.max     200.4
+setp limit1.rapid-ovr.min    0
+setp limit1.rapid-ovr.max    100.4
+setp limit1.spindle-ovr.min  0
+setp limit1.spindle-ovr.max  140.4
+setp limit1.jog.min          0
+setp limit1.jog.max          6000
+
+# feed - analogin1
+net feed-override-scale hm2_7i92.0.7i77.0.0.analogin1 lowpass.feed-ovr.in
+net feed-ovr-filt    lowpass.feed-ovr.out scale.feed-ovr.in
+net feed-ovr-scaled  scale.feed-ovr.out   limit1.feed-ovr.in
+net feed-ovr-counts  limit1.feed-ovr.out  conv-float-s32.0.in
+net feed-override-scale-out conv-float-s32.0.out halui.feed-override.counts
+# rapid - analogin3
+net rapid-override-scale hm2_7i92.0.7i77.0.0.analogin3 lowpass.rapid-ovr.in
+net rapid-ovr-filt   lowpass.rapid-ovr.out scale.rapid-ovr.in
+net rapid-ovr-scaled scale.rapid-ovr.out   limit1.rapid-ovr.in
+net rapid-ovr-counts limit1.rapid-ovr.out  conv-float-s32.1.in
+net rapid-override-scale-out conv-float-s32.1.out halui.rapid-override.counts
+# spindle - analogin2
+net spindle-override-scale hm2_7i92.0.7i77.0.0.analogin2 lowpass.spindle-ovr.in
+net spindle-ovr-filt   lowpass.spindle-ovr.out scale.spindle-ovr.in
+net spindle-ovr-scaled scale.spindle-ovr.out   limit1.spindle-ovr.in
+net spindle-ovr-counts limit1.spindle-ovr.out  conv-float-s32.2.in
+net spindle-override-scale-out conv-float-s32.2.out halui.spindle.0.override.counts
+
+# jog speed - analogin0, in mm/min.
+# The knob does NOT drive halui directly. axisrc.py reads limit1.jog.out and moves
+# the AXIS jog slider; the slider value comes back out on axisui.jog-speed and
+# custom_postgui.hal nets that to the jog-speed signal below. So knob, slider,
+# panel buttons and AXIS jogging all use the same speed.
+# Knob in the dead zone = jog speed zero, the buttons do nothing.
+net jog-speed-in     hm2_7i92.0.7i77.0.0.analogin0 scale.jog.in
+net jog-speed-scaled scale.jog.out limit1.jog.in
+net jog-knob         limit1.jog.out
+
+# halui has ONE jog speed for every axis, so it is switched by which button is
+# held: an A or B button selects the deg/min slider, otherwise the mm/min one.
+#   jog-lspeed = AXIS mm/min slider   jog-aspeed = AXIS deg/min slider
+#   (both netted to their axisui pins in custom_postgui.hal)
+# The mux runs in the servo thread, so it has switched before halui (userspace)
+# sees the button and starts the jog.
+net jog-a-pos or2.1.in0
+net jog-a-neg or2.1.in1
+#net jog-b-pos or2.2.in0     (B+ is the drawbar button now)
+net jog-b-neg or2.2.in1
+net jog-a-btn or2.1.out or2.3.in0
+net jog-b-btn or2.2.out or2.3.in1
+net jog-rotary-btn or2.3.out jog-mux.sel
+net jog-lspeed jog-mux.in0
+net jog-aspeed jog-mux.in1
+net jog-speed  jog-mux.out halui.joint.jog-speed

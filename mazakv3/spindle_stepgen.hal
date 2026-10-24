@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------------
+# Spindle VFD step/direction output -- hm2_7i92.0.stepgen.03
+# ---------------------------------------------------------------------
+# Open-loop velocity-mode stepgen feeding the VFD's pulse-train input.
+# STEP frequency is proportional to commanded spindle speed, DIR picks
+# forward/reverse.  Nothing here reads the spindle encoder, so this is
+# open loop -- the existing encoder.05 feedback and spindle-at-speed
+# logic in mazakv3.hal are untouched and still work.
+#
+#   step frequency (Hz) = (spindle RPM / 60) * [SPINDLE_0]STEP_SCALE
+#
+# STEP_SCALE is how many input pulses the VFD wants per spindle rev.
+# Pick it so max spindle speed lands at the VFD's max input frequency:
+#   STEP_SCALE = max_input_Hz / (max_RPM / 60)
+# e.g. 10 kHz input at 6000 RPM  ->  10000 / 100 = 100
+#
+# stepgen 03 is free: 00 = carousel, 01 = atc, 02 = shifter (joints 5-7).
+
+setp   hm2_7i92.0.stepgen.03.step_type        0
+# control-type is driven by spindle-orient (1 velocity, 0 position)
+
+setp   hm2_7i92.0.stepgen.03.dirsetup         [SPINDLE_0]DIRSETUP
+setp   hm2_7i92.0.stepgen.03.dirhold          [SPINDLE_0]DIRHOLD
+setp   hm2_7i92.0.stepgen.03.steplen          [SPINDLE_0]STEPLEN
+setp   hm2_7i92.0.stepgen.03.stepspace        [SPINDLE_0]STEPSPACE
+
+setp   hm2_7i92.0.stepgen.03.position-scale   [SPINDLE_0]STEP_SCALE
+setp   hm2_7i92.0.stepgen.03.maxvel           [SPINDLE_0]STEPGEN_MAXVEL
+setp   hm2_7i92.0.stepgen.03.maxaccel         [SPINDLE_0]STEPGEN_MAXACCEL
+
+# ---command + M19 orient---
+# spindle_orient.comp sits between motion and the stepgen.  Normal running it
+# passes speed-out-rps straight to velocity-cmd.  On M19 it stops, finds the
+# encoder index once, then switches the drive to position mode (7i76 out-01)
+# and the stepgen to position mode, and sends the exact pulses to reach the
+# angle, checked against encoder.05.  High gear (1:1) only.
+# Install it once with:  sudo halcompile --install spindle_orient.comp
+
+loadrt spindle_orient names=spindle-orient
+addf   spindle-orient  servo-thread
+
+setp   spindle-orient.offset        [SPINDLE_0]ORIENT_OFFSET
+setp   spindle-orient.pos-ratio     [SPINDLE_0]ORIENT_POS_RATIO
+setp   spindle-orient.search-vel    [SPINDLE_0]ORIENT_SEARCH_VEL
+setp   spindle-orient.move-vel      [SPINDLE_0]ORIENT_MOVE_VEL
+setp   spindle-orient.move-accel    [SPINDLE_0]ORIENT_MOVE_ACCEL
+setp   spindle-orient.tolerance     [SPINDLE_0]ORIENT_TOLERANCE
+setp   spindle-orient.retry-wait    [SPINDLE_0]ORIENT_RETRY_WAIT
+setp   spindle-orient.release-delay [SPINDLE_0]RELEASE_DELAY
+setp   spindle-orient.always-index  [SPINDLE_0]ORIENT_ALWAYS_INDEX
+setp   spindle-orient.mode-delay    [SPINDLE_0]ORIENT_MODE_DELAY
+setp   spindle-orient.timeout       [SPINDLE_0]ORIENT_TIMEOUT
+
+# from motion
+net machine-is-enabled       =>  spindle-orient.enable
+net spindle-enable           =>  spindle-orient.spindle-on
+net spindle-vel-cmd-rps      =>  spindle-orient.speed-cmd
+net spindle-orient           spindle.0.orient        =>  spindle-orient.orient
+net spindle-orient-angle     spindle.0.orient-angle  =>  spindle-orient.orient-angle
+net spindle-orient-mode      spindle.0.orient-mode   =>  spindle-orient.orient-mode
+net spindle-locked           spindle.0.locked        =>  spindle-orient.locked
+net spindle-is-oriented      spindle-orient.is-oriented  =>  spindle.0.is-oriented
+net spindle-orient-fault     spindle-orient.fault        =>  spindle.0.orient-fault
+
+# from encoder.05 (nets made in mazakv3.hal)
+net spindle-revs             =>  spindle-orient.position
+net spindle-vel-fb-rps       =>  spindle-orient.velocity
+net spindle-index-enable     <=> spindle-orient.index-enable
+net spindle-stepgen-fb       hm2_7i92.0.stepgen.03.position-fb  =>  spindle-orient.stepgen-fb
+
+# to the stepgen.  speed-out-rps is signed, so M3 / M4 drive DIR for free.
+net spindle-step-vel         spindle-orient.vel-cmd       =>  hm2_7i92.0.stepgen.03.velocity-cmd
+net spindle-step-pos         spindle-orient.pos-cmd       =>  hm2_7i92.0.stepgen.03.position-cmd
+net spindle-step-ctype       spindle-orient.control-type  =>  hm2_7i92.0.stepgen.03.control-type
+net spindle-step-enable      spindle-orient.stepgen-enable  =>  hm2_7i92.0.stepgen.03.enable
+
+# drive relays on 7i76 field outputs (sourcing 24V, relay coil to field ground)
+# Drive enable: on while running and during M19/hold; after M5 it ramps to
+# zero, then drops so the spindle is free.
+net spindle-drive-enable     spindle-orient.drive-enable   =>  hm2_7i92.0.7i77.0.0.output-10
+
+net spindle-pos-mode         spindle-orient.position-mode  =>  hm2_7i92.0.7i77.0.0.output-11

@@ -1,0 +1,51 @@
+# Toolchanger tab of the side panel (toolchanger_panel.xml), added 2026-10-14.
+# Sourced from custom_postgui.hal - the pyvcp.* pins only exist once the GUI is up.
+
+# status
+net atc-fault           =>  pyvcp.tc-atc-fault
+net atc-fault-step      =>  pyvcp.tc-atc-step
+net atc-fault-reason    =>  pyvcp.tc-atc-reason
+net tc-atc-state        =>  pyvcp.tc-atc-state
+net spindle-held        =>  pyvcp.tc-spindle-held
+
+net mag-fault           =>  pyvcp.tc-mag-fault
+net mag-fault-step      =>  pyvcp.tc-mag-step
+net mag-fault-reason    =>  pyvcp.tc-mag-reason
+net tc-mag-state        mag.0.state  =>  pyvcp.tc-mag-state
+net tool-prepared       =>  pyvcp.tc-tool-ready
+net mag-pot-out         =>  pyvcp.tc-pot-out
+net mag-pot-pocket      =>  pyvcp.tc-pot-pocket
+
+# buttons
+# one reset for the atc and the mag (was: halcmd sets tc-fault-reset 1 / 0)
+net tc-fault-reset      pyvcp.tc-reset
+# put the out pot back in its pocket (mag idle only, interlocks still apply)
+net tc-return-pot       pyvcp.tc-return-pot  =>  mag.0.return-pot
+
+# step / slow mode + shifter trims (2026-10-24), see comp/atc.comp and comp/mag.comp
+net tc-step-mode        pyvcp.tc-step-mode  =>  atc.0.step-mode  mag.0.step-mode
+net tc-step-go          pyvcp.tc-step-go    =>  atc.0.step-go    mag.0.step-go
+net tc-atc-waiting      atc.0.step-waiting  =>  pyvcp.tc-atc-waiting
+net tc-mag-waiting      mag.0.step-waiting  =>  pyvcp.tc-mag-waiting
+net tc-speed-pct        atc.0.speed-pct     =>  pyvcp.tc-speed-pct
+net tc-next-arm         atc.0.next-arm-pos  =>  pyvcp.tc-next-arm
+net tc-next-unclamp     atc.0.next-unclamp  =>  pyvcp.tc-next-unclamp
+net tc-next-shifter     mag.0.next-shifter  =>  pyvcp.tc-next-shifter
+net tc-next-clamp       mag.0.next-clamp    =>  pyvcp.tc-next-clamp
+net tc-next-pocket      mag.0.next-pocket   =>  pyvcp.tc-next-pocket
+net J6:out              =>  pyvcp.tc-arm-pos
+net J7:out              =>  pyvcp.tc-shifter-pos
+net tc-shifter-atc-trim pyvcp.tc-shifter-atc-trim  =>  mag.0.shifter-atc-trim
+net tc-shifter-mag-trim pyvcp.tc-shifter-mag-trim  =>  mag.0.shifter-mag-trim
+net tc-shifter-atc-eff  mag.0.shifter-atc-eff  =>  pyvcp.tc-shifter-atc-eff
+net tc-shifter-mag-eff  mag.0.shifter-mag-eff  =>  pyvcp.tc-shifter-mag-eff
+
+# pot position unknown LED (2026-10-24)
+net mag-pot-unknown     =>  pyvcp.tc-pot-unknown
+# forget the out pot after putting it back by hand (mag idle, or a reason 6 fault)
+net tc-pot-clear        pyvcp.tc-pot-clear  =>  mag.0.pot-clear
+
+# drawbar (2026-10-24)
+net tool-sensor-unclamped  =>  pyvcp.tc-drawbar-unclamped
+net tc-drawbar-ok       drawbar.0.manual-ok  =>  pyvcp.tc-drawbar-ok
+net drawbar-feed-inhibit  =>  pyvcp.tc-drawbar-inhibit

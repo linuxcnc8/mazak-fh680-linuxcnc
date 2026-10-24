@@ -1,0 +1,22 @@
+# =====================================================================
+# TEMPORARY - FAKE drawbar clamp sensors, for AIR SWAPS ONLY.
+# =====================================================================
+# The real clamp/unclamp sensor bracket (7i70 input-18 / input-19) is off
+# for repairs (2026-10-14), so the atc would time out at step 30.  This
+# makes the atc see the drawbar do whatever the unclamp output tells it,
+# instantly:
+#     unclamp output ON  -> unclamped TRUE,  clamped FALSE
+#     unclamp output OFF -> unclamped FALSE, clamped TRUE
+#
+# NEVER run this with tools in the machine - the atc would pull a tool
+# without knowing the drawbar really let go / really gripped.
+# To remove: delete the HALFILE = sim_clamp_sensors.hal line in the ini.
+
+unlinkp atc.0.tool-clamped
+unlinkp atc.0.tool-unclamped
+
+loadrt not names=clamp-sim-not
+addf clamp-sim-not servo-thread
+
+net spindle-tool-unclamp  =>  atc.0.tool-unclamped  clamp-sim-not.in
+net clamp-sim-clamped     clamp-sim-not.out  =>  atc.0.tool-clamped

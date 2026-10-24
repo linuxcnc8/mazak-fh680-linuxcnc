@@ -1,0 +1,16 @@
+O<tool-clamp>sub
+m5
+
+(msg,tool clamp)
+
+m65 p6
+
+
+m66 p5 l3 q9999
+
+
+
+
+(msg,tool clamp success)
+
+O<tool-clamp>endsub

@@ -1,0 +1,324 @@
+component pallet "Pallet Change Controller";
+
+// Inputs
+pin in bit pallet_change_command;
+pin in bit pallet_up_sens;
+pin in bit pallet_middle_sens;
+pin in bit pallet_top_sens;
+pin in bit pallet_bottom_sens;
+pin in bit arms_toPallet_sens;
+pin in bit arms_toHome_sens;
+pin in float pallet_encoder_position;
+
+// Debugging Inputs
+// state_control is used to manually step through the states when debugging
+pin in unsigned state_control;
+// debug is true when debugging
+pin in bit debug;
+
+// Outputs
+pin out bit pallet_encoder_reset;
+pin out bit arms_toPallet;
+pin out bit arms_up;
+pin out bit pallet_ccw;
+pin out bit pallet_cw;
+
+pin out bit timer_start;
+pin in bit timer_finish;
+pin out bit pos1_sens;
+pin out bit pos2_sens;
+
+// Debugging outputs
+pin out bit out0;
+pin out bit out10;
+pin out bit out20;
+pin out bit out30;
+pin out bit out40;
+pin out bit out45;
+pin out bit out50;
+pin out bit out60;
+pin out bit out70;
+pin out bit out100;
+pin out bit out105;
+pin out bit out110;
+pin out bit out120;
+pin out bit out130;
+pin out bit out150;
+pin out bit out160;
+pin out bit default_bit;
+
+
+function _ fp;
+
+license "GPL";
+author "Andrew Beck and Luke Beck";
+;;
+
+
+FUNCTION(_) {
+	
+	if ((pallet_up_sens && pallet_middle_sens) || 
+		(!pallet_up_sens && !pallet_middle_sens && pallet_top_sens)) {
+		pos1_sens = 1;
+	}
+	else {
+		pos1_sens = 0;
+	}
+	
+	if ((pallet_up_sens && pallet_top_sens) || (!pallet_up_sens && pallet_bottom_sens)) {
+		pos2_sens = 1;
+	}
+	else {
+		pos2_sens = 0;
+	}
+	
+	
+	
+	// static variables are only initialised once and keep their value
+	// even when they go out of scope.
+	static int state = 0;
+	
+	switch(state) {
+		case 0:
+			default_bit = 0;
+			out160 = 0;
+			out0 = 1;
+			
+			if (pallet_change_command && !pallet_up_sens && 
+				!arms_toPallet_sens && arms_toHome_sens) {
+				arms_toPallet = 1;
+				
+				if (!debug) {
+					state = 10;
+				}
+			}
+			if (debug && state_control == 10) {
+				state = 10;
+			}
+			break;
+			
+		case 10: 	
+			out0 = 0;
+			out10 = 1;
+			if (!pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
+				arms_up = 1;
+				if (!debug) {
+					state = 20;
+				}
+			}
+			if (debug && state_control == 20) {
+				state = 20;
+			}
+			break;
+			
+		case 20: 
+			out10 = 0;
+			out20 = 1;
+			if (pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
+	
+				if (!debug) {
+					state = 30;
+				}
+			}
+			if (debug && state_control == 30) {
+				state = 30;
+			}
+			
+			break;
+			
+		case 30:
+			out20 = 0;
+			out30 = 1;
+			if (pos1_sens && !pos2_sens) {
+				if (!debug || state_control == 40) {
+					state = 40;
+				}
+			}
+			else if (!pos1_sens && pos2_sens) {
+				if (!debug || state_control == 100) {
+					state = 100;
+				}
+			}
+			break;
+		
+		case 40:
+			out30 = 0;
+			out40 = 1;
+			
+			pallet_encoder_reset = 1;
+			pallet_ccw = 0;
+			pallet_cw = 1;	// Move Pallet clockwise
+			
+			state = 45;
+			break;
+			
+		case 45: 
+			out40 = 0;
+			out45 = 1;
+			
+			pallet_encoder_reset = 0;
+			state = 50;
+			break;
+			
+		case 50:
+			out45 = 0;
+			out50 = 1;
+			
+			if (!pos1_sens && pos2_sens) {
+				pallet_cw = 0;
+				pallet_encoder_reset = 1;
+				timer_start = 1;
+				
+				if (!debug) {
+					state = 60;
+				}
+			}			    
+				
+			if (debug && state_control == 60) {
+				state = 60;
+			}
+			break;
+		
+		case 60:
+			out50 = 0;
+			out60 = 1;
+			
+			pallet_encoder_reset = 0;
+			
+			if (timer_finish) {
+			    timer_start = 0;
+				pallet_ccw = 0;
+				pallet_cw = 1;
+				
+				state = 70;
+			}
+			
+			break;
+			
+		case 70:
+			out60 = 0;
+			out70 = 1;
+			if (pallet_encoder_position >= 22000) {
+				// Pallet encoder position was determined through trial and error
+				pallet_cw = 0;
+				
+				if(!debug) {
+					state = 150;
+				}
+			}
+			if (debug && state_control == 150) {
+				state = 150;
+			}
+			
+			break;
+			
+		case 100:
+			out30 = 0;
+			out100 = 1;
+			
+			pallet_encoder_reset = 1;
+			pallet_cw = 0;
+			pallet_ccw = 1;	// Move Pallet Counter clockwise
+			
+			state = 105;			
+			break;
+			
+		case 105:
+			out100 = 0;
+			out105 = 1;
+			
+			pallet_encoder_reset = 0;
+			state = 110;
+			break;
+			
+		case 110:
+			out105 = 0;
+			out110 = 1;
+			
+			if (pos1_sens && !pos2_sens) {
+				pallet_ccw = 0;
+				pallet_encoder_reset = 1;
+				timer_start = 1;
+				
+				if (!debug) {
+					state = 120;
+				}
+			}
+			
+			if (debug && state_control == 120) {
+				state = 120;
+			}
+			
+			break;
+		
+		case 120:
+			out110 = 0;
+			out120 = 1;
+			
+			pallet_encoder_reset = 0;
+			
+			if (timer_finish) {	
+				timer_start = 0;
+				pallet_cw = 0;
+				pallet_ccw = 1;
+				state = 130;
+			}
+			break;
+			
+		case 130:
+			out120 = 0;
+			out130 = 1;
+			if (pallet_encoder_position >= 17000) {
+				// Pallet encoder position was determined through trial and error
+				pallet_ccw = 0;
+				
+				if (!debug) {
+					state = 150;
+				}
+			}
+			if (debug && state_control == 150) {
+				state = 150;
+			}
+			
+			break;
+			
+		case 150:
+			out70 = 0;
+			out130 = 0;
+			out150 = 1;
+			if (pallet_up_sens && 
+				arms_toPallet_sens && !arms_toHome_sens) {
+				arms_up = 0;
+				
+				if (!debug) {
+					state = 160;
+				}	
+			}
+			if (debug && state_control == 160) {
+				state = 160;
+			}
+			break;
+			
+		case 160:
+			out150 = 0;
+			out160 = 1;
+			if (!pallet_up_sens && arms_toPallet_sens && !arms_toHome_sens) {
+				arms_toPallet = 0;
+				
+				if (!debug) {
+					state = 0;
+				}
+			}
+			if(debug && state_control == 0) {
+				state = 0;
+			}
+			break;
+		
+		default:
+			default_bit = 1;
+	}
+}
+
+
+
+

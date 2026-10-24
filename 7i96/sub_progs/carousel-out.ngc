@@ -1,0 +1,14 @@
+O<carousel-out>sub
+
+m65 p4
+m64 p5
+
+m66 p3 l4 q5
+(msg, carousel out sensor)
+
+m66 p4 l3 q5
+
+(msg, carousel in sensor)
+G4P.1
+
+O<carousel-out>endsub

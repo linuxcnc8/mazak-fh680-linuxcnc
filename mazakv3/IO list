@@ -1,0 +1,75 @@
+IO list
+
+shifter inputs
+
+16 out
+17  in
+
+shifter outputs
+
+09 extend
+10 retract
+
+
+
+
+
+
+
+
+
+
+front panel inputs
+
+7I77 INPUTS
+
+
+spindle fw 10
+spindle off 13
+
+pause 08
+program start 05
+program stop 22
+
+overrides
+
+feed 1
+rapid 3
+spindle 2
+jog 0
+
+coolant switch up 29
+coolant switch down 20
+
+air blast switch up 19
+air blast switch down 06
+
+jogging  buttons
+
+Z+ 11
+Z- 09
+X+ 12
+X- 14
+Y+ 28
+Y- 23
+A+ 18
+A- 15
+B+ 07
+B- 21
+
+
+MPG buttons
+
+7i76 field io starting at 04
+
+NOTE ENCODER COUNTER ON 7I77 ENCODER 0
+
+X 05
+Y 04
+Z 06
+4 07
+5 24
+6 25
+X10 26
+X100 27  (08 is dead - moved 08-11 to 24-27 on 14-10-2026)
+

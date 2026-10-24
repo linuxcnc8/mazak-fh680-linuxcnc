@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------
+# Spindle VFD step/direction output -- hm2_7i97.0.stepgen.03
+# ---------------------------------------------------------------------
+# Open-loop velocity-mode stepgen feeding the VFD's pulse-train input.
+# STEP frequency is proportional to commanded spindle speed, DIR picks
+# forward/reverse.  Nothing here reads the spindle encoder, so this is
+# open loop -- the existing encoder.05 feedback and spindle-at-speed
+# logic in mazakv2.hal are untouched and still work.
+#
+#   step frequency (Hz) = (spindle RPM / 60) * [SPINDLE_0]STEP_SCALE
+#
+# STEP_SCALE is how many input pulses the VFD wants per spindle rev.
+# Pick it so max spindle speed lands at the VFD's max input frequency:
+#   STEP_SCALE = max_input_Hz / (max_RPM / 60)
+# e.g. 10 kHz input at 6000 RPM  ->  10000 / 100 = 100
+#
+# stepgen 03 is free: 00 = carousel, 01 = atc, 02 = shifter (joints 5-7).
+# All five stepgens are on the 7i76 now, on its TB6/TB7 step+dir terminals.
+# stepgen.03 = the 7i76's fourth step/dir channel, stepgen.04 is still spare.
+
+setp   hm2_7i97.0.stepgen.03.step_type        0
+setp   hm2_7i97.0.stepgen.03.control-type     1
+
+setp   hm2_7i97.0.stepgen.03.dirsetup         [SPINDLE_0]DIRSETUP
+setp   hm2_7i97.0.stepgen.03.dirhold          [SPINDLE_0]DIRHOLD
+setp   hm2_7i97.0.stepgen.03.steplen          [SPINDLE_0]STEPLEN
+setp   hm2_7i97.0.stepgen.03.stepspace        [SPINDLE_0]STEPSPACE
+
+setp   hm2_7i97.0.stepgen.03.position-scale   [SPINDLE_0]STEP_SCALE
+setp   hm2_7i97.0.stepgen.03.maxvel           [SPINDLE_0]STEPGEN_MAXVEL
+setp   hm2_7i97.0.stepgen.03.maxaccel         [SPINDLE_0]STEPGEN_MAXACCEL
+
+# ---command---
+# speed-out-rps is signed, so M3 / M4 drive the DIR output for free.
+# Units line up: position-scale is pulses/rev, so velocity-cmd is rev/sec.
+net spindle-vel-cmd-rps   =>  hm2_7i97.0.stepgen.03.velocity-cmd
+
+# Gated on spindle.0.on, so M5 / estop / machine-off kills the pulse
+# train immediately and the VFD coasts down on its own ramp.  If you'd
+# rather have the stepgen ramp the frequency down at STEPGEN_MAXACCEL,
+# replace the line below with:  setp hm2_7i97.0.stepgen.03.enable 1
+net spindle-enable        =>  hm2_7i97.0.stepgen.03.enable

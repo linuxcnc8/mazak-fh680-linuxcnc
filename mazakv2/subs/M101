@@ -1,0 +1,4 @@
+#!/bin/bash
+halcmd setp classicladder.0.in-29 1
+
+exit 0

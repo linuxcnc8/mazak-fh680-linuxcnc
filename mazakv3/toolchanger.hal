@@ -1,0 +1,226 @@
+#toolchanger hal file
+
+##############loading components##############
+loadrt atc 
+addf atc.0 servo-thread
+
+loadrt mag
+addf mag.0 servo-thread
+
+# drawbar: manual unclamp button + spindle-stopped interlock (2026-10-24)
+loadrt drawbar
+addf drawbar.0 servo-thread
+
+##############loading components##############
+
+######################ATC stuff#################
+
+
+net atc-tool-pos-1 atc.0.atc-tool-pos-1 hm2_7i92.0.7i70.0.4.input-11
+net atc-tool-pos-2 atc.0.atc-tool-pos-2 hm2_7i92.0.7i70.0.4.input-12
+net atc-home-switch atc.0.atc-home-switch
+
+net tool-sensor-clamped atc.0.tool-clamped hm2_7i92.0.7i70.0.4.input-18
+net tool-sensor-unclamped atc.0.tool-unclamped hm2_7i92.0.7i70.0.4.input-19
+
+net tool-change atc.0.atc-change-command iocontrol.0.tool-change
+net tool-changed atc.0.atc-changed iocontrol.0.tool-changed
+net tool-changed mag.0.atc-changed 
+
+######################ATC stuff#################
+
+
+#######outputs###########
+# the atc's unclamp goes through the drawbar comp to the valve (2026-10-24)
+net atc-tool-unclamp     atc.0.tool-unclamp  =>  drawbar.0.atc-unclamp
+net spindle-tool-unclamp drawbar.0.unclamp   =>  hm2_7i92.0.7i71.0.2.output-01
+#limit3 stuff in 1extrajoint.hal
+#######outputs###########
+
+
+#############IO control stuff#########################
+
+
+# mag fault no longer goes to the ladder (it used to E-stop with no message).
+# It now gives an error + program abort, see the bottom of this file.
+net mag-fault mag.0.toolchanger-faulted
+
+
+
+
+
+###############magazine##############
+
+
+net J5:out mag.0.j5-limit3-out 
+
+####important########
+net joint-5-mag-position j5.limit3.in 
+####important########
+
+
+net tool-prep-pocket mag.0.iocontrol-prep-pocket-in iocontrol.0.tool-prep-pocket 
+net tool-prepare iocontrol.0.tool-prepare mag.0.tool-prepare 
+# 2026-10-24 workaround for the LinuxCNC 2.10.0~pre1 abort hang (see mag.comp
+# "Quick prepare ack"): iocontrol gets mag's instant ack, the atc + panel get
+# the real "pot ready".  After a LinuxCNC upgrade (fix 990cb293bd, v2.10.0-pre2)
+# the old line can come back:
+#   net tool-prepared iocontrol.0.tool-prepared mag.0.tool-prepared
+net tool-prepared mag.0.tool-prepared  =>  motion.digital-in-14
+# motion.digital-in-14: the M6 remap waits on it (M66 P14) before the
+# built-in M6, so an Abort while waiting for the pot is safe on 2.10 pre1
+net tool-prep-ack mag.0.io-prepared => iocontrol.0.tool-prepared
+
+###############magazine##############
+
+
+#########shifter##############
+net mag-shifter-cmd-out mag.0.shifter-pos-cmd j7.limit3.in 
+net J7:out mag.0.j7-limit3-out
+
+net shifter-clamp mag.0.shifter-clamp hm2_7i92.0.7i71.0.2.output-09
+net shifter-unclamp mag.0.shifter-unclamp hm2_7i92.0.7i71.0.2.output-10
+net shifter-clamp-sens mag.0.shifter-clamped-sensor hm2_7i92.0.7i70.0.4.input-16
+net shifter-unclamp-sens mag.0.shifter-unclamped-sensor hm2_7i92.0.7i70.0.4.input-17
+
+#########shifter##############
+
+
+
+
+
+
+
+######################ATC interlocks + faults (2026-10-14)#################
+# The atc arm only runs, and stops mid-change, unless the spindle is held at
+# the toolchange angle, Y is at the toolchange height and Z is at the
+# toolchange position (Z added 2026-10-19).  See comp/atc.comp.
+
+net spindle-held     spindle-orient.holding  =>  atc.0.spindle-held
+net tool-prepared    =>  atc.0.tool-prepared
+net y-machine-pos    joint.1.pos-fb          =>  atc.0.y-pos
+net z-machine-pos    joint.2.pos-fb          =>  atc.0.z-pos
+
+setp atc.0.tc-y          [ATC]TC_Y
+setp atc.0.tc-y-tol      [ATC]TC_Y_TOL
+setp atc.0.tc-z          [ATC]TC_Z
+setp atc.0.tc-z-tol      [ATC]TC_Z_TOL
+setp atc.0.step-timeout  [ATC]STEP_TIMEOUT
+
+# A fault stops the arm where it is, aborts the program (so the M6 doesn't
+# hang waiting for tool-changed) and pops up an error with step + reason.
+# Clear it with:  halcmd setp atc.0.fault-reset 1 ; halcmd setp atc.0.fault-reset 0
+# Fault reasons (pushmsg's whole msgs= is limited to ~120 characters, so
+# the codes are listed here instead of in the message):
+#   ATC  1 step timeout  2 spindle not held  3 Y not at height  4 aborted
+#        5 no tool prepared  6 shifter not clear (outside -600..0)
+#        7 Z not at toolchange position
+#   MAG  1 step timeout  2 shifter not clear  3 arm not at rest
+#        4 machine off mid-sequence  5 bad pocket
+loadrt pushmsg msgs="e|atcfault|ATC fault step {s:step} reason {s:reason}","e|magfault|MAG fault step {s:step} reason {s:reason}"
+addf pushmsg servo-thread
+
+# faults that abort the program - OR gate (only the mag uses it now)
+loadrt logic names=tc-fault-any personality=0x202
+addf tc-fault-any servo-thread
+
+# atc faults do NOT abort (an abort mid-M6 makes LinuxCNC record the change
+# as done) - M6 waits, fix the cause, reset to resume.  Only mag faults abort.
+net atc-fault         atc.0.fault         =>  pushmsg.atcfault.trigger
+net atc-fault-step    atc.0.fault-step    =>  pushmsg.atcfault.step
+net atc-fault-reason  atc.0.fault-reason  =>  pushmsg.atcfault.reason
+
+######################magazine interlocks, faults, pot tracking (2026-10-14)#################
+# Carousel only turns while the shifter is between -600 and 0; shifter only
+# moves while the ATC arm is at 0 or 500; arm only moves while the shifter is
+# between -600 and 0.  See comp/mag.comp and comp/atc.comp.
+
+net machine-is-enabled  =>  mag.0.enable
+net J6:out              =>  mag.0.arm-pos
+net J7:out              =>  atc.0.shifter-pos
+
+# pot tracking across restarts - magstate.py <-> mag_state.txt
+loadusr -Wn magstate ./magstate.py
+net mag-pot-out        mag.0.pot-out          =>  magstate.pot-out
+net mag-pot-pocket     mag.0.pot-pocket       =>  magstate.pot-pocket
+net mag-state-loaded   mag.0.state-loaded     =>  magstate.state-loaded
+net mag-saved-valid    magstate.saved-valid       =>  mag.0.saved-valid
+net mag-saved-pot-out  magstate.saved-pot-out     =>  mag.0.saved-pot-out
+net mag-saved-pocket   magstate.saved-pot-pocket  =>  mag.0.saved-pot-pocket
+
+# mag fault -> error message + program abort (no E-stop)
+net mag-fault         =>  pushmsg.magfault.trigger  tc-fault-any.in-01
+net mag-fault-step    mag.0.fault-step    =>  pushmsg.magfault.step
+net mag-fault-reason  mag.0.fault-reason  =>  pushmsg.magfault.reason
+
+# either fault aborts the program
+net tc-fault-abort    tc-fault-any.or  =>  halui.abort
+
+# one reset for both:  halcmd sets tc-fault-reset 1 ; halcmd sets tc-fault-reset 0
+net tc-fault-reset    atc.0.fault-reset  mag.0.fault-reset
+
+######################step / slow mode, shifter positions (2026-10-24)#################
+# AXIS Max Velocity slider -> ATC arm (j6) and shifter (j7) speed.  The
+# carousel (j5) keeps its own speed.  Slider at [TRAJ]MAX_LINEAR_VELOCITY =
+# full [JOINT_6/7]MAX_VELOCITY; lower = slower, down to 2 %.  Step timeouts
+# stretch to match.  These nets override the setp maxv in 1extrajoint.hal.
+net tc-speed-in       halui.max-velocity.value  =>  atc.0.speed-in  mag.0.speed-in
+setp atc.0.speed-full         [TRAJ]MAX_LINEAR_VELOCITY
+setp mag.0.speed-full         [TRAJ]MAX_LINEAR_VELOCITY
+setp atc.0.arm-maxv-full      [JOINT_6]MAX_VELOCITY
+setp mag.0.shifter-maxv-full  [JOINT_7]MAX_VELOCITY
+net tc-arm-maxv       atc.0.arm-maxv      =>  j6.limit3.maxv
+net tc-shifter-maxv   mag.0.shifter-maxv  =>  j7.limit3.maxv
+
+# shifter change position (arm side, was 197) and carousel position (was -757);
+# the panel trims are added to these (see toolchanger_postgui.hal)
+setp mag.0.shifter-atc-pos    [ATC]SHIFTER_ATC_POS
+setp mag.0.shifter-mag-pos    [ATC]SHIFTER_MAG_POS
+
+# step mode (step-mode, step-go) is driven from the panel - toolchanger_postgui.hal
+
+######################E-stop hold (2026-10-24)#################
+# E-stop / machine off stops the j5/j6/j7 stepgens at once, but the limit3s
+# used to carry on to their targets, so the arm / shifter / carousel could
+# move when the machine came back on.  Now while the machine is off (and the
+# joint is homed) the comps set each target to the real joint position and
+# hold limit3.load TRUE, so limit3 sits exactly where the motor stopped.
+# Air valves are left as they are (no dropped tool / pot).
+net machine-is-enabled  =>  atc.0.machine-on
+net J5:enable           =>  mag.0.car-homed
+net J6:enable           =>  atc.0.arm-homed
+net J7:enable           =>  mag.0.shifter-homed
+net tc-car-fb       joint.5.pos-fb    =>  mag.0.car-fb
+net tc-arm-fb       joint.6.pos-fb    =>  atc.0.arm-fb
+net tc-shifter-fb   joint.7.pos-fb    =>  mag.0.shifter-fb
+net tc-car-hold     mag.0.car-hold      =>  j5.limit3.load
+net tc-arm-hold     atc.0.hold          =>  j6.limit3.load
+net tc-shifter-hold mag.0.shifter-hold  =>  j7.limit3.load
+
+# pot position unknown (2026-10-24): set by a mag fault mid-move with a pot
+# out, saved across restarts by magstate.py (mag fault reason 6)
+net mag-pot-unknown    mag.0.pot-unknown          =>  magstate.pot-unknown
+net mag-saved-unknown  magstate.saved-pot-unknown  =>  mag.0.saved-pot-unknown
+
+######################drawbar manual unclamp (2026-10-24)#################
+# HOLD the button to unclamp, let go to clamp (fresh press needed).  B+ jog
+# button for now (frontpanel.hal), later a button at the spindle.  Refused
+# (error message, reason) when: 1 machine off  2 spindle on  3 spindle
+# turning (encoder > rpm-max or VFD steps, now or in the last 0.5 s)
+# 4 toolchanger busy.  The atc's unclamp needs the spindle stopped too.
+# While unclamped: spindle inhibited and feed inhibited (no motion / jog).
+net drawbar-button      hm2_7i92.0.7i77.0.0.input-07  =>  drawbar.0.manual
+net machine-is-enabled  =>  drawbar.0.machine-on
+net spindle-enable      =>  drawbar.0.spindle-on
+net drawbar-step-vel    hm2_7i92.0.stepgen.03.velocity-fb  =>  drawbar.0.step-vel
+net spindle-vel-fb-rpm  =>  drawbar.0.enc-rpm
+net tc-atc-state        atc.0.state  =>  drawbar.0.atc-state  mag.0.atc-state
+net tool-sensor-unclamped  =>  drawbar.0.unclamped-sensor
+net drawbar-spindle-inhibit  drawbar.0.spindle-inhibit  =>  spindle.0.inhibit
+net drawbar-feed-inhibit     drawbar.0.feed-inhibit     =>  motion.feed-inhibit
+# Refused message: its own message comp, NOT a 3rd pushmsg message - a
+# longer pushmsg msgs= (170 chars) crashed rtapi_app at startup on
+# 2026-10-24 (it loads fine in halrun).  The reason number is drawbar.0.refuse-reason.
+loadrt message names=drawbarmsg messages="Drawbar unclamp refused - machine off / spindle on or turning / toolchanger busy"
+addf drawbarmsg servo-thread
+net drawbar-refused     drawbar.0.refused        =>  drawbarmsg.trigger

@@ -1,0 +1,19 @@
+# halshow watchlist created Tue Jan 14 09:00:25 NZDT 2025
+
+pin+mag.0.default-bit
+pin+mag.0.iocontrol-prep-pocket-in
+pin+mag.0.j5-limit3-out
+pin+mag.0.j7-limit3-out
+pin+mag.0.magazine-ready
+pin+mag.0.shifter-clamp
+pin+mag.0.shifter-clamped-sensor
+pin+mag.0.shifter-pos-cmd
+pin+mag.0.shifter-ready
+pin+mag.0.shifter-unclamp
+pin+mag.0.shifter-unclamped-sensor
+pin+mag.0.state
+pin+mag.0.time
+pin+mag.0.tool-prep-pocket-out
+pin+mag.0.tool-prepare
+pin+mag.0.tool-prepared
+pin+mag.0.toolchanger-faulted

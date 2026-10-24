@@ -1,0 +1,652 @@
+component mag "Toolchanger magazine + shifter: fetches/returns pots, with interlocks, timeouts, fault reset and pot tracking";
+
+description """
+The shifter positions (-600 park, -757 carousel, 197 change position, 0 clear)
+and clamp handshakes are unchanged from the January 2025 version.  Added:
+
+Pot tracking - pot-out / pot-pocket say whether a pot is out of the carousel
+and which pocket it belongs in.  magstate.py saves them to mag_state.txt and
+hands them back at startup (saved-*), so a restart doesn't lose a pot.
+
+Requests (iocontrol tool-prepare + tool-prep-pocket):
+  - pot for that pocket already out       -> prepared straight away
+  - another pot out                       -> put it back, then fetch the new one
+  - pocket 0 (tool already in the spindle) -> put any pot back, prepared, no fetch
+  - pocket changes while prepared (T1 then T5 before M6) -> same as above,
+    no fault (acts on the pocket change itself, machine on)
+  - tool-prepared is only TRUE while the out pot matches iocontrol's pocket
+
+Interlocks (user's rules, 2026-10-14):
+  - carousel only turns while the shifter is between -600 and 0
+  - shifter only moves while the ATC arm is at 0 or 500 (+-arm-tol)
+
+Faults stop everything where it is (carousel and shifter targets frozen at
+their current positions, clamp outputs left as they are) and wait in state
+999 with fault-step / fault-reason:
+  1 step timeout
+  2 shifter not clear (outside -600..0) while the carousel must turn
+  3 ATC arm not at rest while the shifter must move
+  4 machine turned off mid-sequence
+  5 bad pocket number
+  6 the out pot's position is unknown (see below) - Put pot back / pot-clear
+A rising edge on fault-reset (2026-10-24) RESUMES the move that faulted
+for reasons 1-4 in a fetch / return (shifter and carousel targets put back,
+pot-unknown cleared - the mag has the pot again), like the atc does.  That
+needs the machine on: a reset while it is off is ignored, so the move can
+still be resumed afterwards.  In step mode the resumed move waits for
+step-go like any other.  Other faults (5, 6, or a fault while idle /
+prepared) go back to idle.  After a restart there's nothing to resume (state
+starts at 0) - use Put pot back / Pot is in carousel.  Pot tracking is kept.
+
+Pot position unknown (2026-10-24): a fault (or E-stop) mid-sequence while a
+pot is out of the carousel sets pot-unknown - the pot may be anywhere
+between the carousel and the change position.  While it is set, any tool
+request faults with reason 6 instead of trusting the pot (it used to count
+an out pot as ready, so the arm could swing with no pot at the change
+position).  Clear it with return-pot (pot is at the change position) or
+pot-clear (you put it back by hand).  Both work straight from a reason-6
+fault too.  Saved across restarts by magstate.py.
+
+Manual recovery (halcmd setp, later panel buttons), idle only:
+  return-pot  rising edge: put the out pot back in its pocket
+  pot-clear   rising edge: forget the out pot (you put it back by hand)
+
+Shifter positions (2026-10-24): the change position (was fixed 197) and the
+carousel position (was fixed -757) are pins, shifter-atc-pos and
+shifter-mag-pos (from the ini), plus a trim each (shifter-atc-trim,
+shifter-mag-trim, +-trim-max, from the panel).  Changing a trim while the
+shifter is at / heading to that position moves it there live, as long as
+the ATC arm is at rest - for setting the positions up.  Copy the result
+(shifter-atc-eff / shifter-mag-eff) into the ini afterwards.
+
+Step mode (step-mode TRUE): every shifter move, shifter clamp / unclamp and
+carousel move waits for a rising edge on step-go.  While it waits
+step-waiting is TRUE and next-shifter / next-pocket / next-clamp say what
+the step will do (next-clamp 1 = clamp, 2 = unclamp, 0 = no change).
+Timeouts don't run while waiting.
+
+Slow mode: like the atc, speed-in / speed-full (min-speed .. 1) scales
+shifter-maxv (to j7.limit3.maxv).  Shifter step timeouts count
+speed-weighted time, so moving the slider mid-step doesn't trip them.
+
+E-stop / machine off (2026-10-24): while enable is FALSE, the carousel and
+shifter targets follow their real positions (car-fb, shifter-fb) and
+car-hold / shifter-hold are TRUE (-> j5/j7.limit3.load), once each is
+homed.  Nothing moves when the machine comes back on.  A running sequence
+still faults with reason 4.
+The carousel keeps its own speed.
+
+Quick prepare ack (2026-10-24) - WORKAROUND for a LinuxCNC 2.10.0~pre1 bug:
+an Abort while iocontrol's tool-prepare (or tool-change) handshake is
+pending leaves task's io.status at EXEC forever (exec_state 7, MDI/program
+runs hang, slow mode changes, only a restart clears it).  Fixed upstream in
+commit 990cb293bd / v2.10.0-pre2.  So io-prepared (-> iocontrol.0.tool-prepared)
+answers tool-prepare at once, and the request is latched here (req_pending)
+and carried out as before.  tool-prepared (-> atc) still only goes TRUE when
+the right pot really is at the change position, and the atc waits for it
+before swapping.  Side effect: a T no longer blocks the program - the fetch
+runs while the program carries on; the M6 waits for the pot.  An Abort
+during an M6 can still hang task (tool-change handshake) - restart.
+After upgrading LinuxCNC this can go: net iocontrol.0.tool-prepared back to
+mag.0.tool-prepared in toolchanger.hal (io-prepared then unused).
+""";
+
+// --- inputs ---
+pin in bit enable "machine on, motion.motion-enabled";
+pin in bit magazine_ready;
+pin in bit shifter_ready;
+pin in signed iocontrol_prep_pocket_in "iocontrol pocket number";
+pin in float j5_limit3_out "carousel position, pockets";
+pin in float j7_limit3_out "shifter position";
+pin in float arm_pos "ATC arm position (J6:out)";
+pin in bit tool_prepare;
+pin in bit shifter_clamped_sensor;
+pin in bit shifter_unclamped_sensor;
+pin in bit atc_changed;
+pin in bit fault_reset;
+pin in bit return_pot;
+pin in bit pot_clear;
+pin in unsigned atc_state "atc.0.state - Put pot back in prepared state only while 0 (no M6 running)";
+
+// --- saved pot state from magstate.py ---
+pin in bit saved_valid;
+pin in bit saved_pot_out;
+pin in signed saved_pot_pocket;
+pin in bit saved_pot_unknown;
+
+// --- outputs ---
+pin out float tool_prep_pocket_out "carousel target, pockets";
+pin out float shifter_pos_cmd "shifter target";
+pin out bit tool_prepared;
+pin out bit io_prepared "quick ack of tool-prepare -> iocontrol.0.tool-prepared (2.10 pre1 abort workaround)";
+pin out bit toolchanger_faulted;
+pin out bit shifter_clamp;
+pin out bit shifter_unclamp;
+pin out bit pot_out "a pot is out of the carousel";
+pin out signed pot_pocket "pocket the out pot belongs in";
+pin out bit pot_unknown "out pot position unknown (fault mid-move) - Put pot back or pot-clear";
+pin out bit state_loaded "saved pot state has been read - magstate.py may save";
+pin out signed fault_step;
+pin out signed fault_reason;
+pin out float step_time;
+
+// --- settings ---
+pin in float step_timeout = 10 "seconds for a shifter / clamp step";
+pin in float carousel_timeout = 60 "seconds for a carousel move";
+pin in float arm_tol = 5 "arm counts as at rest within this of 0 or 500";
+pin in float shifter_tol = 0.5 "shifter clear zone is -600-tol .. 0+tol";
+pin in signed pockets = 80;
+pin in float shifter_atc_pos = 197 "shifter change position (arm side)";
+pin in float shifter_mag_pos = -757 "shifter carousel position";
+pin in float shifter_atc_trim "added to shifter-atc-pos (panel)";
+pin in float shifter_mag_trim "added to shifter-mag-pos (panel)";
+pin in float trim_max = 25 "trims are limited to +- this";
+pin out float shifter_atc_eff "change position in use";
+pin out float shifter_mag_eff "carousel position in use";
+
+// --- step / slow mode (2026-10-24) ---
+pin in bit step_mode "each shifter / clamp / carousel move waits for step-go";
+pin in bit step_go "rising edge: do the next step";
+pin out bit step_waiting "waiting for step-go";
+pin out float next_shifter "shifter target of the waiting step";
+pin out signed next_pocket "carousel pocket of the waiting step";
+pin out signed next_clamp "waiting step: 1 clamp, 2 unclamp, 0 no change";
+pin in float speed_in = 100 "halui.max-velocity.value (unconnected = full speed)";
+pin in float speed_full = 100 "speed-in that means full speed";
+pin in float min_speed = 0.02 "slowest speed fraction";
+pin in float shifter_maxv_full = 240 "[JOINT_7]MAX_VELOCITY";
+pin out float shifter_maxv "to j7.limit3.maxv";
+
+// --- E-stop hold (2026-10-24) ---
+pin in bit car_homed "joint.5.homed";
+pin in bit shifter_homed "joint.7.homed";
+pin in float car_fb "joint.5.pos-fb";
+pin in float shifter_fb "joint.7.pos-fb";
+pin out bit car_hold "machine off: to j5.limit3.load";
+pin out bit shifter_hold "machine off: to j7.limit3.load";
+
+// Debugging
+pin io unsigned state;
+pin out bit default_bit;
+
+variable int prepared_pocket;
+variable int want_pocket;
+variable int fetch_after;
+variable int car_sent;
+variable int prev_atc_changed;
+variable int prev_fault_reset;
+variable int prev_return_pot;
+variable int prev_tool_prepare;
+variable int req_pending;
+variable int prev_pot_clear;
+variable unsigned prev_state;
+variable int prev_step_go;
+variable int go_armed;
+variable double work_time;
+variable float prev_atc_eff = 197;
+variable float prev_mag_eff = -757;
+variable float saved_shifter;
+variable float saved_pocket;
+variable int resume_pending;
+
+function _;
+
+license "GPL";
+author "Andrew Beck, Luke Beck; interlocks, timeouts, pot tracking added 2026-10-14; step / slow mode, shifter trims, E-stop hold, pot-unknown, reset-resume 2026-10-24";
+include <stdlib.h>;
+;;
+
+#include <rtapi_math.h>
+
+/* states - fetch keeps the original numbers, return keeps 80-130 */
+#define ST_IDLE        0
+#define ST_FETCH_GO    5    /* carousel to pocket, shifter to -600 */
+#define ST_FETCH_IN   10    /* shifter in to the carousel (MAG_POS) */
+#define ST_FETCH_GRAB 20    /* clamp */
+#define ST_FETCH_OUT  30    /* shifter out to the change position (ATC_POS) */
+#define ST_FETCH_LET  40    /* unclamp */
+#define ST_FETCH_BACK 50    /* shifter back to 0 */
+#define ST_FETCH_DONE 60
+#define ST_PREPARED   70
+#define ST_RET_GO     75    /* carousel to the out pot's pocket */
+#define ST_RET_UNCL   80    /* unclamp, then shifter to ATC_POS */
+#define ST_RET_GRAB   90    /* clamp */
+#define ST_RET_IN    100    /* shifter in to MAG_POS */
+#define ST_RET_LET   110    /* unclamp */
+#define ST_RET_PARK  120    /* shifter to -600 */
+#define ST_RET_DONE  130
+#define ST_FAULT     999
+
+#define R_TIMEOUT     1
+#define R_SHIFTER     2
+#define R_ARM         3
+#define R_MACHINE     4
+#define R_POCKET      5
+#define R_POT_UNKNOWN 6
+
+/* shifter positions in use (pins + trims, see FUNCTION) */
+#define ATC_POS shifter_atc_eff
+#define MAG_POS shifter_mag_eff
+
+#define NEAR(a, b) (fabs((a) - (b)) < 0.01)
+#define SHIFTER_AT(p) NEAR(j7_limit3_out, (p))
+#define CAROUSEL_AT_TARGET NEAR(j5_limit3_out, tool_prep_pocket_out)
+#define UNCLAMPED (shifter_unclamped_sensor && !shifter_clamped_sensor)
+#define CLAMPED   (shifter_clamped_sensor && !shifter_unclamped_sensor)
+
+#define TRIP(reason) do { \
+    toolchanger_faulted = 1; \
+    saved_shifter = shifter_pos_cmd; \
+    saved_pocket = tool_prep_pocket_out; \
+    if (pot_out && state != ST_IDLE && state != ST_PREPARED) pot_unknown = 1; \
+    fault_step = state; \
+    fault_reason = (reason); \
+    tool_prep_pocket_out = j5_limit3_out; \
+    shifter_pos_cmd = j7_limit3_out; \
+    tool_prepared = 0; \
+    state = ST_FAULT; \
+} while (0)
+
+static int modulo(int value, int range) {
+    int r = value % range;
+    return r < 0 ? r + range : r;
+}
+
+/* carousel position (unbounded, in pockets) for pocket `finish`, going the
+   short way round from `start` */
+static int shortest_path(int start, int finish, int n) {
+    int dis_clock = modulo(finish - start, n);
+    int dis_anti = n - dis_clock;
+    return dis_anti < dis_clock ? start - dis_anti : start + dis_clock;
+}
+
+FUNCTION(_) {
+    int arm_rest = fabs(arm_pos) <= arm_tol || fabs(arm_pos - 500) <= arm_tol;
+    int shifter_clear = j7_limit3_out >= -600 - shifter_tol && j7_limit3_out <= shifter_tol;
+    int carousel_pocket = modulo((int)floor(j5_limit3_out + 0.5), pockets);
+    int atc_done = atc_changed && !prev_atc_changed;
+    int reset = fault_reset && !prev_fault_reset;
+    int ret_req = return_pot && !prev_return_pot;
+    int clr_req = pot_clear && !prev_pot_clear;
+    int moving_carousel, moving_shifter;
+    double speed = speed_full > 0 ? speed_in / speed_full : 1;
+    double atc_trim = shifter_atc_trim, mag_trim = shifter_mag_trim;
+    unsigned snap_state;
+    float snap_shifter, snap_pocket;
+    int snap_clamp, snap_unclamp, snap_prepared, snap_pot_out, snap_pot_pocket;
+    int snap_want, snap_prepared_pocket, snap_fetch_after, snap_car_sent, snap_req;
+
+    /* slow mode - shifter only, the carousel keeps its speed */
+    if (speed > 1) speed = 1;
+    if (speed < min_speed) speed = min_speed;
+    if (speed <= 0) speed = 1;
+    shifter_maxv = shifter_maxv_full * speed;
+
+    /* shifter positions + trims; a trim change moves the shifter live if
+       it is at / heading to that position and the arm is at rest */
+    if (atc_trim > trim_max) atc_trim = trim_max;
+    if (atc_trim < -trim_max) atc_trim = -trim_max;
+    if (mag_trim > trim_max) mag_trim = trim_max;
+    if (mag_trim < -trim_max) mag_trim = -trim_max;
+    shifter_atc_eff = shifter_atc_pos + atc_trim;
+    shifter_mag_eff = shifter_mag_pos + mag_trim;
+    if (state != ST_FAULT && arm_rest) {
+        if (NEAR(shifter_pos_cmd, prev_atc_eff)) shifter_pos_cmd = shifter_atc_eff;
+        else if (NEAR(shifter_pos_cmd, prev_mag_eff)) shifter_pos_cmd = shifter_mag_eff;
+        prev_atc_eff = shifter_atc_eff;
+        prev_mag_eff = shifter_mag_eff;
+    }
+
+    /* step mode: Next only counts while a step is waiting */
+    if (!step_mode) go_armed = 0;
+    else if (step_go && !prev_step_go && step_waiting) go_armed = 1;
+    prev_step_go = step_go;
+    step_waiting = 0;
+
+    prev_atc_changed = atc_changed;
+    prev_fault_reset = fault_reset;
+    prev_return_pot = return_pot;
+
+    /* latch the tool request - iocontrol only holds tool-prepare until
+       io-prepared answers it */
+    if (tool_prepare && !prev_tool_prepare) req_pending = 1;
+    prev_tool_prepare = tool_prepare;
+    io_prepared = tool_prepare && state_loaded;
+    prev_pot_clear = pot_clear;
+
+    /* load the saved pot state once */
+    if (!state_loaded) {
+        if (!saved_valid) return;
+        pot_out = saved_pot_out;
+        pot_pocket = saved_pot_pocket;
+        pot_unknown = saved_pot_out && saved_pot_unknown;
+        tool_prep_pocket_out = j5_limit3_out;
+        shifter_pos_cmd = j7_limit3_out;
+        state_loaded = 1;
+    }
+
+    /* step timer */
+    if (state != prev_state) { step_time = 0; work_time = 0; }
+    else { step_time += fperiod; work_time += fperiod * speed; }
+    prev_state = state;
+
+    /* Put pot back / pot-clear also clear a "pot position unknown" fault */
+    if (state == ST_FAULT && fault_reason == R_POT_UNKNOWN && (clr_req || ret_req)) {
+        toolchanger_faulted = 0;
+        fault_step = 0;
+        fault_reason = 0;
+        state = ST_IDLE;
+    }
+
+    if (reset && state == ST_FAULT) {
+        int resumable = fault_reason >= R_TIMEOUT && fault_reason <= R_MACHINE
+                        && fault_step != ST_IDLE && fault_step != ST_PREPARED;
+        if (resumable && !enable) {
+            /* machine off: keep the fault, the move can be resumed later */
+        } else {
+            if (resumable) {
+                /* carry on with the move that faulted; targets go back
+                   below, after the step-mode snapshot */
+                state = fault_step;
+                resume_pending = 1;
+                /* fresh timer: the time spent faulted doesn't count */
+                prev_state = ~0u;
+                step_time = 0;
+                work_time = 0;
+                pot_unknown = 0;
+            } else {
+                state = ST_IDLE;
+            }
+            toolchanger_faulted = 0;
+            fault_step = 0;
+            fault_reason = 0;
+        }
+    }
+
+    /* checks while a sequence is running */
+    if (state != ST_IDLE && state != ST_PREPARED && state != ST_FAULT) {
+        moving_carousel = !CAROUSEL_AT_TARGET;
+        moving_shifter = !NEAR(j7_limit3_out, shifter_pos_cmd);
+        if (!enable)                                TRIP(R_MACHINE);
+        else if (moving_carousel && !shifter_clear) TRIP(R_SHIFTER);
+        else if (moving_shifter && !arm_rest)       TRIP(R_ARM);
+        else if ((state == ST_FETCH_GO || state == ST_RET_GO)
+                 ? step_time > carousel_timeout : work_time > step_timeout)
+                                                    TRIP(R_TIMEOUT);
+    }
+
+    /* snapshot for step mode */
+    snap_state = state;
+    snap_shifter = shifter_pos_cmd;
+    snap_pocket = tool_prep_pocket_out;
+    snap_clamp = shifter_clamp;
+    snap_unclamp = shifter_unclamp;
+    snap_prepared = tool_prepared;
+    snap_pot_out = pot_out;
+    snap_pot_pocket = pot_pocket;
+    snap_want = want_pocket;
+    snap_prepared_pocket = prepared_pocket;
+    snap_fetch_after = fetch_after;
+    snap_car_sent = car_sent;
+    snap_req = req_pending;
+
+    /* resume after a fault reset: put the targets back (held back by step
+       mode like any other move) */
+    if (resume_pending) {
+        shifter_pos_cmd = saved_shifter;
+        tool_prep_pocket_out = saved_pocket;
+    }
+
+    switch (state) {
+    case ST_IDLE:
+        tool_prepared = 0;
+        if (clr_req) { pot_out = 0; pot_unknown = 0; }
+        if (ret_req && pot_out) {
+            pot_unknown = 0;             /* user says it is at the change position */
+            fetch_after = 0;
+            want_pocket = 0;
+            state = ST_RET_GO;
+            break;
+        }
+        if (!req_pending || !enable) break;
+        req_pending = 0;
+        if (pot_out && pot_unknown) { TRIP(R_POT_UNKNOWN); break; }
+        want_pocket = iocontrol_prep_pocket_in;
+        if (want_pocket < 0 || want_pocket > pockets) { TRIP(R_POCKET); break; }
+        if (want_pocket == 0) {
+            /* tool already in the spindle - nothing to fetch */
+            if (pot_out) { fetch_after = 0; req_pending = 1; state = ST_RET_GO; }  /* still asked: prepared after */
+            else { prepared_pocket = 0; tool_prepared = 1; state = ST_PREPARED; }
+        } else if (pot_out && pot_pocket == want_pocket) {
+            prepared_pocket = want_pocket; tool_prepared = 1; state = ST_PREPARED;
+        } else if (pot_out) {
+            fetch_after = 1; state = ST_RET_GO;
+        } else {
+            state = ST_FETCH_GO;
+        }
+        break;
+
+    /* ---------------- fetch a pot ---------------- */
+    case ST_FETCH_GO:
+        /* unclamp, park the shifter at -600 (it may have been left at MAG_POS
+           by a fault), and only then turn the carousel */
+        if (step_time == 0) {
+            if (!arm_rest) { TRIP(R_ARM); break; }
+            shifter_clamp = 0;
+            shifter_unclamp = 1;
+            car_sent = 0;
+        }
+        if (UNCLAMPED && !NEAR(shifter_pos_cmd, -600)) shifter_pos_cmd = -600;
+        if (SHIFTER_AT(-600) && !car_sent) {
+            int dest = shortest_path((int)floor(j5_limit3_out + 0.5), want_pocket, pockets);
+            if (abs(dest) >= 80000000) { TRIP(R_POCKET); break; }
+            tool_prep_pocket_out = dest;
+            car_sent = 1;
+        }
+        if (CAROUSEL_AT_TARGET && carousel_pocket == modulo(want_pocket, pockets)
+                && SHIFTER_AT(-600) && UNCLAMPED) {
+            shifter_pos_cmd = MAG_POS;
+            state = ST_FETCH_IN;
+        }
+        break;
+
+    case ST_FETCH_IN:
+        if (SHIFTER_AT(MAG_POS)) {
+            shifter_unclamp = 0;
+            shifter_clamp = 1;
+            state = ST_FETCH_GRAB;
+        }
+        break;
+
+    case ST_FETCH_GRAB:
+        if (CLAMPED) {
+            shifter_pos_cmd = ATC_POS;
+            pot_out = 1;                 /* pot is leaving the carousel */
+            pot_pocket = want_pocket;
+            state = ST_FETCH_OUT;
+        }
+        break;
+
+    case ST_FETCH_OUT:
+        if (SHIFTER_AT(ATC_POS)) {
+            shifter_clamp = 0;
+            shifter_unclamp = 1;
+            state = ST_FETCH_LET;
+        }
+        break;
+
+    case ST_FETCH_LET:
+        if (UNCLAMPED) {
+            shifter_pos_cmd = 0;
+            state = ST_FETCH_BACK;
+        }
+        break;
+
+    case ST_FETCH_BACK:
+        if (SHIFTER_AT(0)) state = ST_FETCH_DONE;
+        break;
+
+    case ST_FETCH_DONE:
+        prepared_pocket = want_pocket;
+        tool_prepared = 1;
+        state = ST_PREPARED;
+        break;
+
+    /* ---------------- prepared, waiting for M6 ---------------- */
+    case ST_PREPARED:
+        if (ret_req && pot_out && atc_state == 0 && arm_rest) {
+            /* Put pot back after an aborted program (2026-10-24): the pot
+               goes home, iocontrol keeps its stale prepare, so an M6 now
+               stops at atc "not prepared" until a new T is given */
+            tool_prepared = 0;
+            fetch_after = 0;
+            want_pocket = 0;
+            state = ST_RET_GO;
+        } else if (atc_done) {
+            /* the pot now holds the old tool - it goes back to the same pocket */
+            tool_prepared = 0;
+            fetch_after = 0;
+            state = ST_RET_GO;
+        } else if (enable && iocontrol_prep_pocket_in != prepared_pocket) {
+            /* new T before M6: swap pots, no fault.  Don't wait for the
+               tool-prepare pulse - iocontrol sees tool-prepared still TRUE
+               from the last T and drops tool-prepare before we notice. */
+            tool_prepared = 0;
+            want_pocket = iocontrol_prep_pocket_in;
+            if (want_pocket < 0 || want_pocket > pockets) { TRIP(R_POCKET); break; }
+            if (!pot_out) {
+                state = want_pocket == 0 ? ST_IDLE : ST_FETCH_GO;
+            } else if (want_pocket == pot_pocket) {
+                prepared_pocket = want_pocket; tool_prepared = 1;
+            } else {
+                fetch_after = want_pocket != 0;
+                state = ST_RET_GO;
+            }
+        }
+        break;
+
+    /* ---------------- return the out pot ---------------- */
+    case ST_RET_GO:
+        if (step_time == 0) {
+            int dest = shortest_path((int)floor(j5_limit3_out + 0.5), pot_pocket, pockets);
+            if (abs(dest) >= 80000000) { TRIP(R_POCKET); break; }
+            if (!shifter_clear) { TRIP(R_SHIFTER); break; }
+            tool_prep_pocket_out = dest;
+        }
+        if (CAROUSEL_AT_TARGET && carousel_pocket == modulo(pot_pocket, pockets)) {
+            if (!arm_rest) { TRIP(R_ARM); break; }
+            shifter_clamp = 0;
+            shifter_unclamp = 1;
+            state = ST_RET_UNCL;
+        }
+        break;
+
+    case ST_RET_UNCL:
+        if (UNCLAMPED && !NEAR(shifter_pos_cmd, ATC_POS)) shifter_pos_cmd = ATC_POS;
+        if (SHIFTER_AT(ATC_POS)) {
+            shifter_unclamp = 0;
+            shifter_clamp = 1;
+            state = ST_RET_GRAB;
+        }
+        break;
+
+    case ST_RET_GRAB:
+        if (CLAMPED) {
+            shifter_pos_cmd = MAG_POS;
+            state = ST_RET_IN;
+        }
+        break;
+
+    case ST_RET_IN:
+        if (SHIFTER_AT(MAG_POS)) {
+            shifter_clamp = 0;
+            shifter_unclamp = 1;
+            state = ST_RET_LET;
+        }
+        break;
+
+    case ST_RET_LET:
+        if (UNCLAMPED) {
+            pot_out = 0;                 /* pot is back in its pocket */
+            shifter_pos_cmd = -600;
+            state = ST_RET_PARK;
+        }
+        break;
+
+    case ST_RET_PARK:
+        if (SHIFTER_AT(-600)) state = ST_RET_DONE;
+        break;
+
+    case ST_RET_DONE:
+        if (fetch_after) {
+            fetch_after = 0;
+            state = ST_FETCH_GO;
+        } else if (req_pending && want_pocket == 0) {
+            req_pending = 0;
+            prepared_pocket = 0;
+            tool_prepared = 1;
+            state = ST_PREPARED;
+        } else {
+            state = ST_IDLE;
+        }
+        break;
+
+    case ST_FAULT:
+        break;
+
+    default:
+        default_bit = 1;
+        break;
+    }
+
+    /* never claim prepared for a pocket iocontrol isn't asking for */
+    if (state != ST_PREPARED || iocontrol_prep_pocket_in != prepared_pocket)
+        tool_prepared = 0;
+
+    /* step mode: a step that moves the shifter or carousel or changes the
+       shifter clamp is held back (everything put back as it was) until
+       Next is pressed */
+    if (step_mode && state != ST_FAULT
+            && (shifter_pos_cmd != snap_shifter || tool_prep_pocket_out != snap_pocket
+                || shifter_clamp != snap_clamp || shifter_unclamp != snap_unclamp)) {
+        if (go_armed) {
+            go_armed = 0;
+        } else {
+            next_shifter = shifter_pos_cmd;
+            next_pocket = modulo((int)floor(tool_prep_pocket_out + 0.5), pockets);
+            next_clamp = shifter_clamp != snap_clamp || shifter_unclamp != snap_unclamp
+                         ? (shifter_clamp ? 1 : 2) : 0;
+            state = snap_state;
+            shifter_pos_cmd = snap_shifter;
+            tool_prep_pocket_out = snap_pocket;
+            shifter_clamp = snap_clamp;
+            shifter_unclamp = snap_unclamp;
+            tool_prepared = snap_prepared;
+            pot_out = snap_pot_out;
+            pot_pocket = snap_pot_pocket;
+            want_pocket = snap_want;
+            prepared_pocket = snap_prepared_pocket;
+            fetch_after = snap_fetch_after;
+            car_sent = snap_car_sent;
+            req_pending = snap_req;
+            step_waiting = 1;
+            /* re-enter the state next cycle: timer from 0, one-shots run again */
+            prev_state = ~0u;
+            step_time = 0;
+            work_time = 0;
+        }
+    }
+
+    if (resume_pending && !step_waiting) resume_pending = 0;
+
+    /* a request made while fetching / prepared is followed by the pocket
+       number (FETCH_DONE -> PREPARED compares it); a faulted mag drops it
+       (the fault aborts the program) */
+    if ((state >= ST_FETCH_GO && state <= ST_PREPARED) || state == ST_FAULT) req_pending = 0;
+
+    /* E-stop / machine off: targets = where things really are */
+    car_hold = !enable && car_homed;
+    shifter_hold = !enable && shifter_homed;
+    if (car_hold) tool_prep_pocket_out = car_fb;
+    if (shifter_hold) shifter_pos_cmd = shifter_fb;
+}

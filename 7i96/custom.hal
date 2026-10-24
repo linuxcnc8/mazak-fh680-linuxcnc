@@ -1,0 +1,19 @@
+# Include your custom HAL commands here
+# This file will not be overwritten when you run PNCconf again
+
+
+# **** Setup for external estop ladder program -START ****
+
+net estop-out     => classicladder.0.in-00
+net estop-ext     => classicladder.0.in-01
+net estop-strobe     classicladder.0.in-02   <=  iocontrol.0.user-request-enable
+net estop-outcl      classicladder.0.out-00  =>  iocontrol.0.emc-enable-in
+
+# **** Setup for external estop ladder program -END ****
+
+# --- ESTOP-EXT ---
+net estop-ext hm2_7i96.0.7i70.0.3.input-47
+
+net machine-is-on hm2_7i96.0.7i77.0.0.output-00
+
+net lube-on classicladder.0.out-01 hm2_7i96.0.7i71.0.2.output-06

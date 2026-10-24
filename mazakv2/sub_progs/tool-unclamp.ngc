@@ -1,0 +1,16 @@
+O<tool-unclamp>sub
+m5
+
+(msg,tool unclamp)
+
+m64 p6
+
+
+m66 p5 l4 q9999
+
+
+
+
+(msg,tool unclamp success)
+
+O<tool-unclamp>endsub

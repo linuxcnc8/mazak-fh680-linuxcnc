@@ -1,0 +1,100 @@
+
+
+#custom mpg hal file
+#08-8-2026
+#andrew beck new zealand
+
+loadrt mux4 count=1
+#loadrt or2
+loadrt ilowpass
+setp ilowpass.0.scale 100
+setp ilowpass.0.gain .05
+
+# demux decodes the 3-bit axis selector into one-of-six outputs,
+# so the pendant needs 3 input pins instead of 5.
+# Sized for 6 now (X Y Z A B OFF) so adding B later is just uncommenting,
+# no need to reload the component with a different personality.
+loadrt demux personality=6
+
+
+addf mux4.0		      servo-thread
+#addf or2.0                    servo-thread
+addf ilowpass.0 servo-thread
+addf demux.0 servo-thread
+
+
+# --- MPG --- 
+
+# In linux 2.8 need to use joint.x not axis.x or axis.0
+
+setp joint.0.jog-vel-mode 1
+setp joint.1.jog-vel-mode 1
+setp joint.2.jog-vel-mode 1
+setp joint.3.jog-vel-mode 1
+setp joint.4.jog-vel-mode 1
+
+setp axis.x.jog-vel-mode 1
+setp axis.y.jog-vel-mode 1
+setp axis.z.jog-vel-mode 1
+setp axis.a.jog-vel-mode 1
+setp axis.b.jog-vel-mode 1
+
+# This sets the scale that will be used based on the input to the mux4
+setp mux4.0.in0 0.00005
+setp mux4.0.in1 0.0005
+setp mux4.0.in2 0.0025
+setp mux4.0.in3 0.01
+
+#The inputs to the mux4 component - 7i70 card, sserial channel 0
+net scale1 mux4.0.sel0 <= hm2_7i97.0.7i70.0.0.input-35
+net scale2 mux4.0.sel1 <= hm2_7i97.0.7i70.0.0.input-36
+
+#The output from the mux4 is sent to each axis jog scale
+
+net mpg-scale <= mux4.0.out
+net mpg-scale => joint.0.jog-scale => axis.x.jog-scale
+net mpg-scale => joint.1.jog-scale => axis.y.jog-scale
+net mpg-scale => joint.2.jog-scale => axis.z.jog-scale
+net mpg-scale => joint.3.jog-scale => axis.a.jog-scale
+net mpg-scale => joint.4.jog-scale => axis.b.jog-scale
+
+#The Axis select inputs, binary encoded into demux - 7i70 card, sserial channel 0
+#Wire the selector switch to give these codes:
+#  0 (000) = X   1 (001) = Y   2 (010) = Z   3 (011) = A   4 (100) = B   5 (101) = OFF
+#3 select pins cover all 6 positions instead of one pin per axis.
+
+net mpg-sel0 demux.0.sel-bit-00 <= hm2_7i97.0.7i70.0.0.input-32
+net mpg-sel1 demux.0.sel-bit-01 <= hm2_7i97.0.7i70.0.0.input-33
+net mpg-sel2 demux.0.sel-bit-02 <= hm2_7i97.0.7i70.0.0.input-34
+
+#One output per axis. Only the selected axis is jog-enabled.
+net mpg-x joint.0.jog-enable <= axis.x.jog-enable <= demux.0.out-00
+net mpg-y joint.1.jog-enable <= axis.y.jog-enable <= demux.0.out-01
+net mpg-z joint.2.jog-enable <= axis.z.jog-enable <= demux.0.out-02
+net mpg-a joint.3.jog-enable <= axis.a.jog-enable <= demux.0.out-03
+net mpg-b joint.4.jog-enable <= axis.b.jog-enable <= demux.0.out-04
+
+#demux.0.out-05 is the OFF position - left unconnected on purpose,
+#so selector position 6 enables no axis at all.
+
+#Handwheel counts. The 7i77's MPG counter is gone; the 7i97 has four MPG
+#quadrature inputs of its own on isolated inputs 0-7 (TB4/TB5):
+#  MPG0 = IN0/IN1   MPG1 = IN2/IN3   MPG2 = IN4/IN5   MPG3 = IN6/IN7
+#IN0 is the estop input, so wire the handwheel A/B to IN2/IN3 and use MPG1.
+#
+#### CHECK THIS PIN NAME BEFORE RUNNING ####
+#The MPG counters are ordinary hostmot2 encoder instances, but which instance
+#numbers they land on depends on the 7i97 firmware. This assumes the six TB1/
+#TB2 encoders are 00-05, the 7i76 spindle encoder input is 06, and the four
+#MPG counters follow as 07-10, making MPG1 = encoder.08.
+#Confirm with:  halcmd show pin hm2_7i97.0.encoder
+net mpg-out ilowpass.0.in <= hm2_7i97.0.encoder.08.count
+
+#The encoded output counts to the axis. Only selected axis will move.
+net encoder-counts <= ilowpass.0.out
+net encoder-counts => joint.0.jog-counts => axis.x.jog-counts
+net encoder-counts => joint.1.jog-counts => axis.y.jog-counts
+net encoder-counts => joint.2.jog-counts => axis.z.jog-counts
+net encoder-counts => joint.3.jog-counts => axis.a.jog-counts
+net encoder-counts => joint.4.jog-counts => axis.b.jog-counts
+

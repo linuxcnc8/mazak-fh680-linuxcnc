@@ -1,0 +1,263 @@
+component atc "ATC component";
+
+// Inputs
+pin in bit atc_change_command;
+pin in float atc_in_position;
+pin in bit tool_clamped;
+pin in bit tool_unclamped;
+pin in bit magazine_ready;
+pin in bit shifter_ready;
+pin in bit atc_home_switch;
+pin in bit atc_tool_pos_1;
+pin in bit atc_tool_pos_2;
+
+// Outputs
+pin out bit atc_changed;
+
+// Debugging Inputs
+pin in bit debug;
+pin io unsigned state;
+
+
+// Debugging outputs
+pin out bit tool_unclamp;
+pin out bit default_bit;
+pin out float atc_out_position;
+
+function _ fp;
+
+license "GPL";
+author "Andrew Beck 11-1-24";
+;;
+
+
+FUNCTION(_) {
+		
+
+	static int tool_change = 0;
+	static int prev_atc_change_command = 0;
+
+	if (atc_change_command != prev_atc_change_command){
+		// Input has changed
+		if(atc_change_command == 1){
+			// Run tool change
+			tool_change = 1;
+		}
+		else {
+			// don't run tool change
+			tool_change = 0;
+		}
+	}
+	else {
+		tool_change = 0;
+	}
+	prev_atc_change_command = atc_change_command;
+
+
+
+
+
+	
+	switch(state) {
+		case 0:
+			
+
+			if (tool_change == 1) {
+				atc_changed = 0;
+				if (!debug) {
+					state = 1;
+				}
+			}
+		
+			break;
+
+
+		case 1:			
+
+			if (atc_in_position == 0 && atc_out_position == 0) {
+					state = 10;
+					
+				}
+
+
+				if (atc_in_position == 500 && atc_out_position == 500) {
+					state = 110;
+				}
+			
+			break;
+
+			
+	
+		case 10: 	
+			
+			if (atc_in_position == 0 && atc_home_switch) {
+				atc_out_position = 100;
+				
+				if (!debug) {
+					state = 20;
+				}
+			}
+			
+			break;
+
+			
+		case 20: 
+			
+			if (atc_in_position == 100 && atc_tool_pos_1) {
+				tool_unclamp = 1;
+				if (!debug) {
+					state = 30;
+				}
+			}
+			
+			
+			break;
+
+
+			case 30: 
+			
+			if (tool_unclamped && !tool_clamped) {
+				atc_out_position = 418;
+					
+					if (!debug) {
+					state = 40;
+				}
+			}
+			
+			
+			break;
+			
+			
+			case 40: 
+			
+			if (atc_in_position == 418 && atc_tool_pos_2) {
+				tool_unclamp = 0;
+
+				if (!debug) {
+					state = 45;
+				}
+			}
+			
+			break;
+
+
+			case 45: 
+			
+			if (tool_clamped && !tool_unclamped) {
+				
+					
+					if (!debug) {
+					state = 50;
+				}
+			}
+			
+			
+			break;
+
+
+			case 50: 
+
+			atc_out_position = 500;
+
+			if (atc_in_position == 500 && atc_home_switch) {
+				atc_changed = 1;
+				state = 0;
+				if (!debug) {
+					state = 0;
+				}
+			}
+				
+			
+			
+			break;
+
+			
+		case 110: 	
+			
+			if (atc_in_position == 500) {
+				atc_out_position = 418;
+				
+				if (!debug) {
+					state = 120;
+				}
+			}
+			
+			break;
+
+			
+		case 120: 
+			
+			if (atc_in_position == 418 && atc_tool_pos_2) {
+				tool_unclamp = 1;
+				if (!debug) {
+					state = 130;
+				}
+			}
+			
+			
+			break;
+
+
+			case 130: 
+			
+			if (tool_unclamped && !tool_clamped) {
+				atc_out_position = 100;
+					
+					if (!debug) {
+					state = 140;
+				}
+			}
+			
+			
+			break;
+			
+			
+			case 140: 
+			
+			if (atc_in_position == 100 && atc_tool_pos_1) {
+				tool_unclamp = 0;
+
+				if (!debug) {
+					state = 145;
+				}
+			}
+			
+			break;
+
+
+			case 145: 
+			
+			if (tool_clamped && !tool_unclamped) {
+				
+					
+					if (!debug) {
+					state = 150;
+				}
+			}
+			
+			break;
+
+
+			case 150: 
+
+			atc_out_position = 0;
+
+			if (atc_in_position == 0 && atc_home_switch) {
+				atc_changed = 1;
+				state = 0;
+				if (!debug) {
+					state = 0;
+				}
+			}
+				
+			break;
+			
+		
+		default:
+			default_bit = 1;
+	}
+}
+
+
+
+

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(halcompile --version)",
+      "Bash(linuxcnc -v)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"linuxcnc -v\")",
+      "Read(//usr/bin/**)",
+      "Bash(dpkg -l)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-cnc-linuxcnc-configs-mazak/8bcf6d64-7b74-4d3b-9f6a-19c815514f1b/scratchpad/build)",
+      "Bash(cp /home/cnc/linuxcnc/configs/mazak/*.comp /home/cnc/linuxcnc/configs/mazak/toolchanger.c /tmp/claude-1000/-home-cnc-linuxcnc-configs-mazak/8bcf6d64-7b74-4d3b-9f6a-19c815514f1b/scratchpad/build/)",
+      "Bash(halcompile --compile atc.comp)",
+      "Bash(halcompile --compile mag.comp)",
+      "Bash(halcompile --compile pallet.comp)",
+      "Bash(halcompile --install atc.comp)",
+      "Bash(sudo -n true)",
+      "Read(//usr/lib/linuxcnc/modules/**)",
+      "Bash(halcompile --compile toolchanger.c)",
+      "Bash(cp /home/cnc/linuxcnc/configs/mazak/toolchanger.c /tmp/claude-1000/-home-cnc-linuxcnc-configs-mazak/8bcf6d64-7b74-4d3b-9f6a-19c815514f1b/scratchpad/toolchanger.c.bak)",
+      "Bash(rm /home/cnc/linuxcnc/configs/mazak/toolchanger.c)",
+      "Bash(timeout 30 halrun -f loadtest.hal)",
+      "Bash(halrun -U)"
+    ]
+  }
+}

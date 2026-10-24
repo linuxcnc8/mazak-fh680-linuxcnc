@@ -1,0 +1,295 @@
+<!-- Toolchanger tab of the side panel (2026-10-14).  Hand written; inserted
+     into toolmeasure.xml by build_toolmeasure.py.  HAL: toolchanger_postgui.hal -->
+<vbox>
+  <labelframe text="ATC arm">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <led>
+          <halpin>"tc-atc-fault"</halpin>
+          <size>16</size>
+          <on_color>"red"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"Fault  step"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-atc-step"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></s32>
+        <label><text>"reason"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-atc-reason"</halpin><format>"d"</format><font>("Helvetica",10,"bold")</font></s32>
+      </hbox>
+      <hbox>
+        <label><text>"State"</text><font>("Helvetica",10)</font></label>
+        <u32><halpin>"tc-atc-state"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></u32>
+        <label><text>"  Spindle held"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-spindle-held"</halpin>
+          <size>14</size>
+          <on_color>"#2e9e44"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+      </hbox>
+      <hbox>
+        <label><text>"Drawbar unclamped"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-drawbar-unclamped"</halpin>
+          <size>14</size>
+          <on_color>"orange"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"  Manual OK"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-drawbar-ok"</halpin>
+          <size>14</size>
+          <on_color>"#2e9e44"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"  Motion blocked"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-drawbar-inhibit"</halpin>
+          <size>14</size>
+          <on_color>"red"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+      </hbox>
+      <label>
+        <text>"Manual unclamp: HOLD B+ (spindle stopped, machine on).\nRefused: 1 machine off 2 spindle on 3 turning 4 TC busy"</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+      <label>
+        <text>"1 timeout 2 spindle 3 Y height 4 aborted\n5 no pot ready 6 shifter in the way 7 Z pos"</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <labelframe text="Magazine / shifter">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <led>
+          <halpin>"tc-mag-fault"</halpin>
+          <size>16</size>
+          <on_color>"red"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"Fault  step"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-mag-step"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></s32>
+        <label><text>"reason"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-mag-reason"</halpin><format>"d"</format><font>("Helvetica",10,"bold")</font></s32>
+      </hbox>
+      <hbox>
+        <label><text>"State"</text><font>("Helvetica",10)</font></label>
+        <u32><halpin>"tc-mag-state"</halpin><format>"3d"</format><font>("Helvetica",10,"bold")</font></u32>
+        <label><text>"  Pot ready"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-tool-ready"</halpin>
+          <size>14</size>
+          <on_color>"#2e9e44"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+      </hbox>
+      <hbox>
+        <label><text>"Pot out of carousel"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-pot-out"</halpin>
+          <size>14</size>
+          <on_color>"orange"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"  pocket"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-pot-pocket"</halpin><format>"2d"</format><font>("Helvetica",10,"bold")</font></s32>
+      </hbox>
+      <hbox>
+        <label><text>"Pot position UNKNOWN"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-pot-unknown"</halpin>
+          <size>14</size>
+          <on_color>"red"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+      </hbox>
+      <label>
+        <text>"1 timeout 2 shifter in the way 3 arm not at rest\n4 machine off 5 bad pocket 6 pot position unknown\n(6: Put pot back if it is at the arm side, or\nPot is in carousel if you put it back by hand)"</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <labelframe text="Step / slow mode">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <checkbutton>
+          <halpin>"tc-step-mode"</halpin>
+          <text>"Step mode"</text>
+          <font>("Helvetica",11,"bold")</font>
+        </checkbutton>
+        <label><text>"  speed %"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-speed-pct"</halpin><format>"3.0f"</format><font>("Helvetica",11,"bold")</font></number>
+      </hbox>
+      <label>
+        <text>"Arm + shifter speed = AXIS Max Velocity slider"</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+      <button>
+        <halpin>"tc-step-go"</halpin>
+        <text>"NEXT STEP"</text>
+        <font>("Helvetica",14,"bold")</font>
+        <bg>"#1f6fb2"</bg>
+        <fg>"#ffffff"</fg>
+        <activebackground>"#185a91"</activebackground>
+        <activeforeground>"#ffffff"</activeforeground>
+        <relief>"raised"</relief>
+        <bd>4</bd>
+        <padx>10</padx>
+        <pady>8</pady>
+      </button>
+      <hbox>
+        <led>
+          <halpin>"tc-atc-waiting"</halpin>
+          <size>16</size>
+          <on_color>"yellow"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"ARM next: to"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-next-arm"</halpin><format>"4.0f"</format><font>("Helvetica",11,"bold")</font></number>
+        <label><text>" unclamp"</text><font>("Helvetica",10)</font></label>
+        <led>
+          <halpin>"tc-next-unclamp"</halpin>
+          <size>14</size>
+          <on_color>"orange"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+      </hbox>
+      <hbox>
+        <label><text>"     now at"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-arm-pos"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <led>
+          <halpin>"tc-mag-waiting"</halpin>
+          <size>16</size>
+          <on_color>"yellow"</on_color>
+          <off_color>"#c8c8c8"</off_color>
+        </led>
+        <label><text>"SHIFTER next: to"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-next-shifter"</halpin><format>"7.2f"</format><font>("Helvetica",11,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <label><text>"     clamp"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-next-clamp"</halpin><format>"d"</format><font>("Helvetica",11,"bold")</font></s32>
+        <label><text>"  pocket"</text><font>("Helvetica",10)</font></label>
+        <s32><halpin>"tc-next-pocket"</halpin><format>"2d"</format><font>("Helvetica",11,"bold")</font></s32>
+      </hbox>
+      <hbox>
+        <label><text>"     now at"</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-shifter-pos"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <label>
+        <text>"Yellow = waiting for NEXT. Values show what NEXT will do.\nclamp 1 clamp  2 unclamp  0 no change.\nArm 0/500 rest  100 grip  418 tools out"</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <labelframe text="Shifter positions">
+    <font>("Helvetica",11,"bold")</font>
+    <vbox>
+      <hbox>
+        <label><text>"Arm side trim"</text><font>("Helvetica",10)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-atc-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",11)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-shifter-atc-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <hbox>
+        <label><text>"Carousel trim"</text><font>("Helvetica",10)</font></label>
+        <spinbox>
+          <halpin>"tc-shifter-mag-trim"</halpin>
+          <min_>-25</min_>
+          <max_>25</max_>
+          <resolution>0.05</resolution>
+          <initval>0</initval>
+          <format>"2.2f"</format>
+          <font>("Helvetica",11)</font>
+        </spinbox>
+        <label><text>"="</text><font>("Helvetica",10)</font></label>
+        <number><halpin>"tc-shifter-mag-eff"</halpin><format>"7.2f"</format><font>("Helvetica",10,"bold")</font></number>
+      </hbox>
+      <label>
+        <text>"Moves the shifter live if it is at that spot\n(arm at rest). Copy the = value into the ini\n[ATC] SHIFTER_ATC_POS / SHIFTER_MAG_POS.\nTrims go back to 0 on restart."</text>
+        <font>("Helvetica",8)</font>
+        <fg>"#555555"</fg>
+      </label>
+    </vbox>
+  </labelframe>
+
+  <label><text>" "</text></label>
+  <button>
+    <halpin>"tc-reset"</halpin>
+    <text>"Reset toolchanger fault"</text>
+    <font>("Helvetica",12,"bold")</font>
+    <bg>"#c0392b"</bg>
+    <fg>"#ffffff"</fg>
+    <activebackground>"#a93226"</activebackground>
+    <activeforeground>"#ffffff"</activeforeground>
+    <relief>"raised"</relief>
+    <bd>4</bd>
+    <padx>10</padx>
+    <pady>6</pady>
+  </button>
+  <label>
+    <text>"Fix the cause first. ATC: if M6 is still waiting the\nchange carries on from the step that faulted.\nMAG: finishes the move it was doing (machine on)."</text>
+    <font>("Helvetica",8)</font>
+    <fg>"#555555"</fg>
+  </label>
+
+  <label><text>" "</text></label>
+  <button>
+    <halpin>"tc-return-pot"</halpin>
+    <text>"Put pot back in carousel"</text>
+    <font>("Helvetica",10,"bold")</font>
+    <bg>"#2e9e44"</bg>
+    <fg>"#ffffff"</fg>
+    <activebackground>"#26863a"</activebackground>
+    <activeforeground>"#ffffff"</activeforeground>
+    <relief>"raised"</relief>
+    <bd>3</bd>
+    <padx>8</padx>
+  </button>
+  <label>
+    <text>"Magazine idle or pot ready (no M6 running).\nArm must be at rest. Re-issue T after."</text>
+    <font>("Helvetica",8)</font>
+    <fg>"#555555"</fg>
+  </label>
+
+  <label><text>" "</text></label>
+  <button>
+    <halpin>"tc-pot-clear"</halpin>
+    <text>"Pot is in carousel (clear flag)"</text>
+    <font>("Helvetica",10,"bold")</font>
+    <bg>"#7f8c8d"</bg>
+    <fg>"#ffffff"</fg>
+    <activebackground>"#6c7a7b"</activebackground>
+    <activeforeground>"#ffffff"</activeforeground>
+    <relief>"raised"</relief>
+    <bd>3</bd>
+    <padx>8</padx>
+  </button>
+  <label>
+    <text>"Only after putting the pot back BY HAND.\nNothing moves - it just forgets the out pot."</text>
+    <font>("Helvetica",8)</font>
+    <fg>"#555555"</fg>
+  </label>
+</vbox>

@@ -1,0 +1,112 @@
+
+O<toolchange>sub
+M5
+G53 G0 Z0.25
+M66 P7 L3 Q20 ; wait for spindle stopped
+		o200 if [#5399 LT 0]
+			(abort, spindle not stopped)
+		o200 endif
+(msg, spindle fault checked)
+g4p.5
+O<spindle-rotate>call
+
+
+;O<carousel-down>call
+
+O<carousel-out>call
+
+O<carousel-up>call
+
+
+(msg, Carousel rotate)
+M65 P0
+M68 E0 Q#<_CURRENT_TOOL>
+M64P0
+G4P.2
+M66 P0 L3 Q20 ; wait for carousel-ready = true
+		o202 if [#5399 LT 0]
+			(abort, carousel not finished)
+		o202 endif
+	
+	M65 P0  ;Disable carousel enable
+(msg, first rotation)
+G4P.2
+
+O<carousel-in>call
+
+
+
+O<tool-unclamp>call
+
+
+O<carousel-down>call
+
+(msg, Carousel rotate2)
+M65 P0
+M68 E0 Q#<_SELECTED_TOOL>
+M64P0
+G4P2
+M66 P0 L3 Q20 ; wait for carousel-ready = true
+		o203 if [#5399 LT 0]
+			(abort, carousel not finished)
+		o203 endif
+	
+	M65 P0  ;Disable carousel enable
+(msg, 2ND rotation)
+
+O<carousel-up>call
+
+O<tool-clamp>call
+
+O<carousel-out>call
+
+
+;o200 IF [#<selected_tool> GT 0]
+
+;O200 ENDIF
+	;M68 E0 Q#<selected_pocket> ;set the carousel to move to the right pocket
+
+	;M64 P0  ;Enable Carousel
+
+	;G4 P2  ; Wait 2 seconds
+
+	;M66 P0 L3 Q5 ; wait for carousel-ready = true
+		;o203 if [#5399 LT 0]
+			;(abort, carousel not finished)
+		;o203 endif
+	
+	;M65 P0  ;Disable carousel enable
+
+
+;O<carousel-in>call
+;(msg,carousel-in success)
+
+;O<tool-unclamp>call
+
+;(msg, tool unclamped)
+
+
+
+
+;O<carousel-out>call
+;(msg,carousel-out success)
+
+
+;O<carousel-up>call
+;(msg,carousel-up success)
+
+;O<tool-clamp>call
+
+;(msg, tool clamped)
+
+
+
+(msg,toolchange end)
+
+m6 g43
+#4999 = #5400
+
+O<toolchange>endsub
+
+m2
+

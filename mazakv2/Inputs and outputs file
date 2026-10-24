@@ -1,0 +1,30 @@
+IO pinouts
+
+yaxis brake hm2_7i92.0.7i77.0.0.output-08
+x axis home hm2_7i92.0.7i77.0.0.input-01
+y axis home hm2_7i92.0.7i77.0.0.input-02
+z axis home hm2_7i92.0.7i77.0.0.input-03
+a axis (4th axis) hm2_7i92.0.7i77.0.0.input-04
+x axis limit hm2_7i92.0.7i77.0.0.input-06
+y axis limit hm2_7i92.0.7i77.0.0.input-07
+z axis limit hm2_7i92.0.7i77.0.0.input-08
+
+outputs
+
+hm2_7i92.0.7i77.0.0.output-00 hydraulic pump
+hm2_7i92.0.7i77.0.0.output-01 4axis table unclamp
+hm2_7i92.0.7i77.0.0.output-02 tool unclamp
+hm2_7i92.0.7i77.0.0.output-03 pallet unclamp
+hm2_7i92.0.7i77.0.0.output-04 pallet up
+pallet change location x 554mm from end of rail to bearing block edge on control side -497.36 to home position
+hm2_7i92.0.7i77.0.0.output-05 rotate arms in
+hm2_7i92.0.7i77.0.0.output-03 pallet unclamp
+hm2_7i92.0.7i77.0.0.output-03 pallet unclamp
+hm2_7i92.0.7i77.0.0.output-03 pallet unclamp
+
+
+hm2_7i92.0.7i77.0.0.output-07 lube pump
+#hm2_7i92.0.7i77.0.0.output-08 spindle oil and air mist
+
+
+

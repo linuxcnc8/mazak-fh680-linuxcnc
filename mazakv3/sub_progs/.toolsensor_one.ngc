@@ -1,0 +1,95 @@
+(  .toolsensor_one.ngc                                                    )
+(  Measure ONE tool against the fixed toolsetter.                         )
+(  Call:  o<.toolsensor_one> call [tool number]                          )
+(  Called for each ticked tool by o<.toolsensor> [Measure Tools button].  )
+(                                                                         )
+(  Adapted from cnc_mill_linear_rail/sub_progs/.toolsensor.ngc 2026-10-11 )
+(  [proven on that machine]. Differences: one tool per call, so it can    )
+(  handle 80 tools, and the cutter diameter comes from the tool table     )
+(  [D column] instead of a box on the panel.                              )
+(                                                                         )
+(  Machine moves use G53 and probes are incremental [G91], so this        )
+(  routine never touches any G5x work offset.                             )
+(                                                                         )
+(  NOT COMMISSIONED YET: the toolsetter is fitted but not wired, and M6   )
+(  does not do a full tool change yet. It aborts until sensor_z is set.   )
+
+o<.toolsensor_one> sub
+
+  #<tool> = #1
+
+  ; --------------------- fixed sensor location ------------------------
+  ; PLACEHOLDERS - NOT MEASURED. Set all three on the machine before use.
+  ; The routine aborts while sensor_z is 0.
+  #<sensor_x> = 0                 ; machine X of the sensor
+  #<sensor_y> = 0                 ; machine Y of the sensor
+  #<sensor_z> = 0                 ; machine Z of the sensor SURFACE, as seen
+                                  ; by a zero-length tool. A wrong value here
+                                  ; crashes the spindle. To find it: load a
+                                  ; tool of known length L, touch it on the
+                                  ; sensor, sensor_z = machine Z - L.
+
+  ; ----------------------------- settings ------------------------------
+  ; feeds (mm/min)
+  #<probe_fast>  = 1000          ; fast approach probe
+  #<probe_slow>  = 50            ; slow measuring probe
+
+  ; distances (mm)
+  #<safe_z>       = 0            ; machine Z for safe traverse (Z max is 23)
+  #<longest_tool> = 300          ; clearance allowed for the longest tool
+  #<z_return>     = 5            ; retract above the sensor after a probe
+  #<big_tool_dia> = 12           ; tools wider than this touch off on the edge
+
+  ; ----------------------------- checks --------------------------------
+  o<cfg> if [#<sensor_z> EQ 0]
+    (abort, tool sensor: sensor_x/y/z not set in sub_progs/.toolsensor_one.ngc)
+  o<cfg> endif
+  o<top> if [[#<sensor_z> + #<longest_tool>] GT #<_ini[AXIS_Z]MAX_LIMIT>]
+    (abort, tool sensor: sensor_z + longest_tool is above the Z max limit)
+  o<top> endif
+
+  g90 g40 g80 g94                ; safe modal state
+  g64 p0.001                     ; path-following tolerance
+  m50 p1                         ; make sure feed override is enabled
+
+  t#<tool> m6
+  o<got> if [#<_current_tool> NE #<tool>]
+    (abort, tool sensor: tool change did not load the requested tool)
+  o<got> endif
+  g49                                      ; drop length offset while probing
+
+  g53 g0 z#<safe_z>                         ; raise to safe traverse height
+  g53 g0 x#<sensor_x> y#<sensor_y>          ; traverse over the sensor
+  g53 g0 z[#<sensor_z> + #<longest_tool>]   ; descend to pre-probe height
+
+  #<dia> = #5410                            ; loaded tool's diameter (tool table D)
+  o<edge> if [#<dia> GT #<big_tool_dia>]
+    g91 g0 x[#<dia> / -2]                   ; shift to touch on the tool edge
+    g90
+  o<edge> endif
+
+  ; Arm the probe input for the two G38.2 blocks only, as on the linear rail.
+  ; Needs a gate in HAL (probe contact AND motion.digital-out-12 -> probe-in),
+  ; to be added when the toolsetter is wired. M62/M63 are synchronized with
+  ; motion - do NOT use M64/M65 here, look-ahead would disarm it early.
+  m62 p12                                      ; ARM probe
+  g91 g38.2 z-#<longest_tool> f#<probe_fast>   ; fast probe to contact
+  g91 g1 z2.5 f300                             ; back off
+  m50 p0                                       ; feed override off
+  g91 g38.2 z-3 f#<probe_slow>                 ; slow measuring probe
+  m50 p1
+  m63 p12                                      ; DISARM probe
+  g90
+
+  ; Machine Z at which the probe TRIPPED: #5063 is the trip point in the
+  ; current work coordinates, [#<_abs_z> - #<_z>] converts it to machine Z.
+  ; G49 is in effect, so no tool length offset is involved.
+  #<z_touch> = [#5063 + [#<_abs_z> - #<_z>]]
+  g10 l1 p#<tool> z[#<z_touch> - #<sensor_z>]  ; write tool length
+
+  g91 g0 z#<z_return>                          ; retract above the sensor
+  g90
+  g53 g0 z#<safe_z>                            ; park Z high
+  g43                                          ; restore length offset
+
+o<.toolsensor_one> endsub

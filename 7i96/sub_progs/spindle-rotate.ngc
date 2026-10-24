@@ -1,0 +1,19 @@
+O<spindle-rotate>sub
+m101
+m51 p0
+s30m4
+m66 p6 l2 q5
+m51 p1
+g4p.1
+m5
+g4p.2
+m101
+m64p7
+m66 p6 l2 q5
+m65p7
+
+(msg,spindle-rotate-success)
+
+O<spindle-rotate>endsub
+
+

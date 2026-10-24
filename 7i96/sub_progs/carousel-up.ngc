@@ -1,0 +1,15 @@
+O<carousel-up>sub
+
+(msg,carousel-up)
+m65 p2
+m64 p3
+;m66 p1 l4 q5
+
+
+m66 p2 l3 q5
+(msg, carousel up sensor)
+
+
+
+O<carousel-up>endsub
+

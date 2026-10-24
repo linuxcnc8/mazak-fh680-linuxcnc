@@ -1,0 +1,13 @@
+# Include your custom_postgui HAL commands here
+# This file will not be overwritten when you run PNCconf again
+
+
+########extra stuff i think needs to be loaded after linuxcnc starts up#######
+net joint-5-mag-position mag.0.tool-prep-pocket-out 
+net J6:out atc.0.atc-in-position
+net joint-6-atc-position j6.limit3.in atc.0.atc-out-position 
+
+########extra stuff i think needs to be loaded after linuxcnc starts up#######
+
+
+ 

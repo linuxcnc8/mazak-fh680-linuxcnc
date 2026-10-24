@@ -1,0 +1,533 @@
+# Converted from the 7i96 + 7i77 config to 7i97 + 7i76 on 2026-08-10.
+#
+# Card layout now is:
+#   7i97  main card, 10.10.10.10   - 6 encoders, 6 +/-10V analog outs (pwmgen),
+#                                    16 isolated inputs, 6 SSR outputs
+#   7i70  on the 7i97's TB4 RS-422 - 48 isolated inputs   (card unchanged)
+#   7i76  on the 7i97's P1         - 5 step/dir, spindle encoder input,
+#                                    32 field inputs, 16 field outputs
+#   7i71  on the 7i76's RS-422     - 48 isolated outputs  (card unchanged)
+#
+# The spindle is step/dir on stepgen.03 (spindle_stepgen.hal).  There is no
+# analog spindle output - TB3 AOUT5 / ENA5 on the 7i97 is spare.
+#
+# ---------------------------------------------------------------------------
+# VERIFY ON FIRST LOAD - these depend on the 7i97 firmware bitfile, not on
+# anything that can be read out of the Mesa manuals:
+#
+#   1. sserial channel numbers.  There are three remotes now, so they must be
+#      channels 0, 1 and 2 - the old 7i77 took two channels and is gone.  This
+#      config assumes the firmware declares the main card's TB4 port first:
+#           7i70 = 0.0   (TB4)
+#           7i76 = 0.1   (P1)
+#           7i71 = 0.2   (chained off the 7i76's expansion port)
+#      If dmesg shows the P1 daughtercard enumerating first instead, the whole
+#      config can be renumbered with:
+#           sed -i 's/7i70\.0\.0\./7i70.0.2./g; s/7i76\.0\.1\./7i76.0.0./g; \
+#                   s/7i71\.0\.2\./7i71.0.1./g' *.hal
+#
+#   2. encoder instance numbers.  Assumes the 7i97's own six muxed encoders
+#      are 00-05 and the 7i76's spindle encoder input is 06 (the pallet
+#      encoder).  The MPG counters are assumed to follow at 07-10 - see
+#      mpg.hal.
+#
+#   3. gpio instance numbers for the 16 isolated inputs (estop is on IN0).
+#
+# Run  halcmd show pin hm2_7i97  with the machine powered up and fix any
+# mismatches before trusting this config.
+# ---------------------------------------------------------------------------
+
+loadrt [KINS]KINEMATICS
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS num_dio=15
+loadrt hostmot2
+# num_encoders is left unset (= all) so the 7i76 spindle encoder and the 7i97
+# MPG encoder inputs all get HAL pins; pin down the count once the numbering
+# is confirmed.  6 pwmgens = the six +/-10V analog outputs on TB3 (AOUT5 is
+# spare - the spindle is step/dir).  Three sserial channels enabled in mode 0,
+# the rest disabled so their FPGA pins stay quiet.
+loadrt hm2_eth board_ip="10.10.10.10" config="num_pwmgens=6 num_stepgens=5 sserial_port_0=000xxxxx"
+setp    hm2_7i97.0.watchdog.timeout_ns 5000000
+loadrt pid names=pid.x,pid.y,pid.z,pid.a,pid.b,pid.s,pid.car,pid.atc,pid.shifter
+loadrt classicladder_rt numPhysInputs=50 numPhysOutputs=50 numS32in=15 numS32out=15 numFloatIn=20 numFloatOut=20 numBits=50 numWords=50 numArithmExpr=150
+loadrt near
+loadrt tristate_bit count=2
+
+
+addf hm2_7i97.0.read          servo-thread
+addf motion-command-handler   servo-thread
+addf motion-controller        servo-thread
+addf pid.x.do-pid-calcs       servo-thread
+addf pid.y.do-pid-calcs       servo-thread
+addf pid.z.do-pid-calcs       servo-thread
+addf pid.a.do-pid-calcs       servo-thread
+addf pid.b.do-pid-calcs       servo-thread
+addf pid.s.do-pid-calcs       servo-thread
+addf pid.car.do-pid-calcs       servo-thread
+addf pid.atc.do-pid-calcs       servo-thread
+addf pid.shifter.do-pid-calcs       servo-thread
+addf tristate-bit.0 servo-thread
+addf tristate-bit.1 servo-thread
+
+addf hm2_7i97.0.write         servo-thread
+setp hm2_7i97.0.dpll.01.timer-us -50
+setp hm2_7i97.0.stepgen.timer-number 1
+addf classicladder.0.refresh servo-thread
+addf near.0                   servo-thread
+
+# ---analog output setup, common to all six +/-10V channels---
+# The 7i97's analog outputs are PWM signals filtered to analog.  Mesa specify
+# 96 kHz with dither enabled for LinuxCNC 2.9.2 and later, and offset mode is
+# required to get correct bipolar (+/-10V) output.  Per-channel scale /
+# output-type / offset-mode / dither are set in each axis section below.
+setp hm2_7i97.0.pwmgen.pwm_frequency 96000
+
+
+# external output signals
+# Home and limit switches all live on the 7i76 field inputs now.
+
+net x-both-limit hm2_7i97.0.7i76.0.1.input-04-not
+net y-both-limit hm2_7i97.0.7i76.0.1.input-05-not
+net z-both-limit hm2_7i97.0.7i76.0.1.input-06-not
+
+net x-axis-home hm2_7i97.0.7i76.0.1.input-00-not
+net y-axis-home hm2_7i97.0.7i76.0.1.input-01-not
+net z-axis-home hm2_7i97.0.7i76.0.1.input-02-not
+net a-axis-home hm2_7i97.0.7i76.0.1.input-03-not
+
+
+
+# external input signals
+
+
+#*******************
+#  AXIS X JOINT 0
+#*******************
+
+setp   pid.x.Pgain     [JOINT_0]P
+setp   pid.x.Igain     [JOINT_0]I
+setp   pid.x.Dgain     [JOINT_0]D
+setp   pid.x.bias      [JOINT_0]BIAS
+setp   pid.x.FF0       [JOINT_0]FF0
+setp   pid.x.FF1       [JOINT_0]FF1
+setp   pid.x.FF2       [JOINT_0]FF2
+setp   pid.x.deadband  [JOINT_0]DEADBAND
+setp   pid.x.maxoutput [JOINT_0]MAX_OUTPUT
+setp   pid.x.error-previous-target true
+
+net x-index-enable  =>  pid.x.index-enable
+net x-enable        =>  pid.x.enable
+net x-pos-cmd       =>  pid.x.command
+net x-pos-fb        =>  pid.x.feedback
+net x-output        <=  pid.x.output
+
+# ---Analog output signals/setup---
+# 7i97 TB3 AOUT0 / ENA0.  With offset-mode on, pwmgen scale is the full-scale
+# voltage: a value of +OUTPUT_SCALE gives +10V and -OUTPUT_SCALE gives -10V.
+# The pwmgen clips at +/-full scale by itself, so the 7i77's analogout minlim /
+# maxlim pins have no equivalent here and are not needed.
+
+setp   hm2_7i97.0.pwmgen.00.output-type  1
+setp   hm2_7i97.0.pwmgen.00.offset-mode  1
+setp   hm2_7i97.0.pwmgen.00.dither       1
+setp   hm2_7i97.0.pwmgen.00.scale        [JOINT_0]OUTPUT_SCALE
+
+net x-output     => hm2_7i97.0.pwmgen.00.value
+net x-pos-cmd    <= joint.0.motor-pos-cmd
+net x-enable     <= joint.0.amp-enable-out
+# each axis now has its own enable - this drives the ENA0 opto output on TB3
+net x-enable     => hm2_7i97.0.pwmgen.00.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.00.counter-mode 0
+setp    hm2_7i97.0.encoder.00.filter 1
+setp    hm2_7i97.0.encoder.00.index-invert 0
+setp    hm2_7i97.0.encoder.00.index-mask 0
+setp    hm2_7i97.0.encoder.00.index-mask-invert 0
+setp    hm2_7i97.0.encoder.00.scale  [JOINT_0]ENCODER_SCALE
+
+net x-pos-fb               <=  hm2_7i97.0.encoder.00.position
+net x-vel-fb               <=  hm2_7i97.0.encoder.00.velocity
+net x-pos-fb               =>  joint.0.motor-pos-fb
+net x-index-enable    joint.0.index-enable  <=>  hm2_7i97.0.encoder.00.index-enable
+net x-pos-rawcounts        <=  hm2_7i97.0.encoder.00.rawcounts
+
+# ---setup home / limit switch signals---
+
+net x-axis-home     =>  joint.0.home-sw-in
+net x-both-limit     =>  joint.0.neg-lim-sw-in
+net x-both-limit     =>  joint.0.pos-lim-sw-in
+
+#*******************
+#  AXIS Y JOINT 1
+#*******************
+
+setp   pid.y.Pgain     [JOINT_1]P
+setp   pid.y.Igain     [JOINT_1]I
+setp   pid.y.Dgain     [JOINT_1]D
+setp   pid.y.bias      [JOINT_1]BIAS
+setp   pid.y.FF0       [JOINT_1]FF0
+setp   pid.y.FF1       [JOINT_1]FF1
+setp   pid.y.FF2       [JOINT_1]FF2
+setp   pid.y.deadband  [JOINT_1]DEADBAND
+setp   pid.y.maxoutput [JOINT_1]MAX_OUTPUT
+setp   pid.y.error-previous-target true
+
+net y-index-enable  =>  pid.y.index-enable
+net y-enable        =>  pid.y.enable
+net y-pos-cmd       =>  pid.y.command
+net y-pos-fb        =>  pid.y.feedback
+net y-output        <=  pid.y.output
+
+# ---Analog output signals/setup---
+# 7i97 TB3 AOUT1 / ENA1
+
+setp   hm2_7i97.0.pwmgen.01.output-type  1
+setp   hm2_7i97.0.pwmgen.01.offset-mode  1
+setp   hm2_7i97.0.pwmgen.01.dither       1
+setp   hm2_7i97.0.pwmgen.01.scale        [JOINT_1]OUTPUT_SCALE
+
+net y-output     => hm2_7i97.0.pwmgen.01.value
+net y-pos-cmd    <= joint.1.motor-pos-cmd
+net y-enable     <= joint.1.amp-enable-out
+net y-enable     => hm2_7i97.0.pwmgen.01.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.01.counter-mode 0
+setp    hm2_7i97.0.encoder.01.filter 1
+setp    hm2_7i97.0.encoder.01.index-invert 0
+setp    hm2_7i97.0.encoder.01.index-mask 0
+setp    hm2_7i97.0.encoder.01.index-mask-invert 0
+setp    hm2_7i97.0.encoder.01.scale  [JOINT_1]ENCODER_SCALE
+
+net y-pos-fb               <=  hm2_7i97.0.encoder.01.position
+net y-vel-fb               <=  hm2_7i97.0.encoder.01.velocity
+net y-pos-fb               =>  joint.1.motor-pos-fb
+net y-index-enable    joint.1.index-enable  <=>  hm2_7i97.0.encoder.01.index-enable
+net y-pos-rawcounts        <=  hm2_7i97.0.encoder.01.rawcounts
+
+# ---setup home / limit switch signals---
+
+net y-axis-home     =>  joint.1.home-sw-in
+net y-both-limit     =>  joint.1.neg-lim-sw-in
+net y-both-limit     =>  joint.1.pos-lim-sw-in
+
+#*******************
+#  AXIS Z JOINT 2
+#*******************
+
+setp   pid.z.Pgain     [JOINT_2]P
+setp   pid.z.Igain     [JOINT_2]I
+setp   pid.z.Dgain     [JOINT_2]D
+setp   pid.z.bias      [JOINT_2]BIAS
+setp   pid.z.FF0       [JOINT_2]FF0
+setp   pid.z.FF1       [JOINT_2]FF1
+setp   pid.z.FF2       [JOINT_2]FF2
+setp   pid.z.deadband  [JOINT_2]DEADBAND
+setp   pid.z.maxoutput [JOINT_2]MAX_OUTPUT
+setp   pid.z.error-previous-target true
+
+net z-index-enable  =>  pid.z.index-enable
+net z-enable        =>  pid.z.enable
+net z-pos-cmd       =>  pid.z.command
+net z-pos-fb        =>  pid.z.feedback
+net z-output        <=  pid.z.output
+
+# ---Analog output signals/setup---
+# 7i97 TB3 AOUT2 / ENA2
+
+setp   hm2_7i97.0.pwmgen.02.output-type  1
+setp   hm2_7i97.0.pwmgen.02.offset-mode  1
+setp   hm2_7i97.0.pwmgen.02.dither       1
+setp   hm2_7i97.0.pwmgen.02.scale        [JOINT_2]OUTPUT_SCALE
+
+net z-output     => hm2_7i97.0.pwmgen.02.value
+net z-pos-cmd    <= joint.2.motor-pos-cmd
+net z-enable     <= joint.2.amp-enable-out
+net z-enable     => hm2_7i97.0.pwmgen.02.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.02.counter-mode 0
+setp    hm2_7i97.0.encoder.02.filter 1
+setp    hm2_7i97.0.encoder.02.index-invert 0
+setp    hm2_7i97.0.encoder.02.index-mask 0
+setp    hm2_7i97.0.encoder.02.index-mask-invert 0
+setp    hm2_7i97.0.encoder.02.scale  [JOINT_2]ENCODER_SCALE
+
+net z-pos-fb               <=  hm2_7i97.0.encoder.02.position
+net z-vel-fb               <=  hm2_7i97.0.encoder.02.velocity
+net z-pos-fb               =>  joint.2.motor-pos-fb
+net z-index-enable    		joint.2.index-enable  <=>  hm2_7i97.0.encoder.02.index-enable
+net z-pos-rawcounts        <=  hm2_7i97.0.encoder.02.rawcounts
+
+# ---setup home / limit switch signals---
+
+net z-axis-home     =>  joint.2.home-sw-in
+net z-both-limit     =>  joint.2.neg-lim-sw-in
+net z-both-limit    =>  joint.2.pos-lim-sw-in
+
+
+
+
+#*******************
+#  AXIS A JOINT 3
+#*******************
+
+setp   pid.a.Pgain     [JOINT_3]P
+setp   pid.a.Igain     [JOINT_3]I
+setp   pid.a.Dgain     [JOINT_3]D
+setp   pid.a.bias      [JOINT_3]BIAS
+setp   pid.a.FF0       [JOINT_3]FF0
+setp   pid.a.FF1       [JOINT_3]FF1
+setp   pid.a.FF2       [JOINT_3]FF2
+setp   pid.a.deadband  [JOINT_3]DEADBAND
+setp   pid.a.maxoutput [JOINT_3]MAX_OUTPUT
+setp   pid.a.error-previous-target true
+
+net a-index-enable  =>  pid.a.index-enable
+net a-enable        =>  pid.a.enable
+net a-pos-cmd       =>  pid.a.command
+net a-pos-fb        =>  pid.a.feedback
+net a-output        <=  pid.a.output
+
+# ---Analog output signals/setup---
+# 7i97 TB3 AOUT3 / ENA3
+
+setp   hm2_7i97.0.pwmgen.03.output-type  1
+setp   hm2_7i97.0.pwmgen.03.offset-mode  1
+setp   hm2_7i97.0.pwmgen.03.dither       1
+setp   hm2_7i97.0.pwmgen.03.scale        [JOINT_3]OUTPUT_SCALE
+
+net a-output     => hm2_7i97.0.pwmgen.03.value
+net a-pos-cmd    <= joint.3.motor-pos-cmd
+net a-enable     <= joint.3.amp-enable-out
+net a-enable     => hm2_7i97.0.pwmgen.03.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.03.counter-mode 0
+setp    hm2_7i97.0.encoder.03.filter 1
+setp    hm2_7i97.0.encoder.03.index-invert 0
+setp    hm2_7i97.0.encoder.03.index-mask 0
+setp    hm2_7i97.0.encoder.03.index-mask-invert 0
+setp    hm2_7i97.0.encoder.03.scale  [JOINT_3]ENCODER_SCALE
+
+net a-pos-fb               <=  hm2_7i97.0.encoder.03.position
+net a-vel-fb               <=  hm2_7i97.0.encoder.03.velocity
+net a-pos-fb               =>  joint.3.motor-pos-fb
+net a-index-enable    		joint.3.index-enable  <=>  hm2_7i97.0.encoder.03.index-enable
+net a-pos-rawcounts        <=  hm2_7i97.0.encoder.03.rawcounts
+
+# ---setup home / limit switch signals---
+
+net a-axis-home     =>  joint.3.home-sw-in
+net a-both-limit     =>  joint.3.neg-lim-sw-in
+net a-both-limit    =>  joint.3.pos-lim-sw-in
+
+#*******************
+#  AXIS B JOINT 4
+#*******************
+
+setp   pid.b.Pgain     [JOINT_4]P
+setp   pid.b.Igain     [JOINT_4]I
+setp   pid.b.Dgain     [JOINT_4]D
+setp   pid.b.bias      [JOINT_4]BIAS
+setp   pid.b.FF0       [JOINT_4]FF0
+setp   pid.b.FF1       [JOINT_4]FF1
+setp   pid.b.FF2       [JOINT_4]FF2
+setp   pid.b.deadband  [JOINT_4]DEADBAND
+setp   pid.b.maxoutput [JOINT_4]MAX_OUTPUT
+setp   pid.b.error-previous-target true
+
+net b-index-enable  =>  pid.b.index-enable
+net b-enable        =>  pid.b.enable
+net b-pos-cmd       =>  pid.b.command
+net b-pos-fb        =>  pid.b.feedback
+net b-output        <=  pid.b.output
+
+# ---Analog output signals/setup---
+# 7i97 TB3 AOUT4 / ENA4.  ENA4 and ENA5 switch independently of ENA0-3.
+
+setp   hm2_7i97.0.pwmgen.04.output-type  1
+setp   hm2_7i97.0.pwmgen.04.offset-mode  1
+setp   hm2_7i97.0.pwmgen.04.dither       1
+setp   hm2_7i97.0.pwmgen.04.scale        [JOINT_4]OUTPUT_SCALE
+
+net b-output     => hm2_7i97.0.pwmgen.04.value
+net b-pos-cmd    <= joint.4.motor-pos-cmd
+net b-enable     <= joint.4.amp-enable-out
+net b-enable     => hm2_7i97.0.pwmgen.04.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.04.counter-mode 0
+setp    hm2_7i97.0.encoder.04.filter 1
+setp    hm2_7i97.0.encoder.04.index-invert 0
+setp    hm2_7i97.0.encoder.04.index-mask 0
+setp    hm2_7i97.0.encoder.04.index-mask-invert 0
+setp    hm2_7i97.0.encoder.04.scale  [JOINT_4]ENCODER_SCALE
+
+net b-pos-fb               <=  hm2_7i97.0.encoder.04.position
+net b-vel-fb               <=  hm2_7i97.0.encoder.04.velocity
+net b-pos-fb               =>  joint.4.motor-pos-fb
+net b-index-enable    		joint.4.index-enable  <=>  hm2_7i97.0.encoder.04.index-enable
+net b-pos-rawcounts        <=  hm2_7i97.0.encoder.04.rawcounts
+
+# ---setup home / limit switch signals---
+# No B home or limit switches are wired yet. Uncomment and add a source for
+# b-axis-home / b-both-limit once the switches are on the machine.
+
+#net b-axis-home     =>  joint.4.home-sw-in
+#net b-both-limit     =>  joint.4.neg-lim-sw-in
+#net b-both-limit    =>  joint.4.pos-lim-sw-in
+
+#*******************
+#  SPINDLE
+#*******************
+
+setp   pid.s.Pgain     [SPINDLE_0]P
+setp   pid.s.Igain     [SPINDLE_0]I
+setp   pid.s.Dgain     [SPINDLE_0]D
+setp   pid.s.bias      [SPINDLE_0]BIAS
+setp   pid.s.FF0       [SPINDLE_0]FF0
+setp   pid.s.FF1       [SPINDLE_0]FF1
+setp   pid.s.FF2       [SPINDLE_0]FF2
+setp   pid.s.deadband  [SPINDLE_0]DEADBAND
+setp   pid.s.maxoutput [SPINDLE_0]MAX_OUTPUT
+setp   pid.s.error-previous-target true
+
+net spindle-index-enable  =>  pid.s.index-enable
+net spindle-enable        =>  pid.s.enable
+net spindle-vel-cmd-rpm     => pid.s.command
+net spindle-vel-fb-rpm      => pid.s.feedback
+net spindle-output        <=  pid.s.output
+
+# ---Analog output signals/setup---
+# The spindle has no analog output.  Speed goes out as step/dir on
+# stepgen.03 - see spindle_stepgen.hal.  The 7i77's analogout5 wiring that
+# used to be here is gone, and AOUT5 / ENA5 on the 7i97 TB3 is spare.
+#
+# pid.s below still runs and still drives the spindle-output signal, but
+# nothing consumes it now.  If you ever want an analog spindle reference,
+# uncomment this and it lands on TB3 AOUT5:
+#
+#setp   hm2_7i97.0.pwmgen.05.output-type  1
+#setp   hm2_7i97.0.pwmgen.05.offset-mode  1
+#setp   hm2_7i97.0.pwmgen.05.dither       1
+#setp   hm2_7i97.0.pwmgen.05.scale        [SPINDLE_0]OUTPUT_SCALE
+#net spindle-output      => hm2_7i97.0.pwmgen.05.value
+#net spindle-enable      => hm2_7i97.0.pwmgen.05.enable
+
+# ---Encoder feedback signals/setup---
+
+setp    hm2_7i97.0.encoder.05.counter-mode 0
+setp    hm2_7i97.0.encoder.05.filter 1
+setp    hm2_7i97.0.encoder.05.index-invert 0
+setp    hm2_7i97.0.encoder.05.index-mask 0
+setp    hm2_7i97.0.encoder.05.index-mask-invert 0
+setp    hm2_7i97.0.encoder.05.scale  [SPINDLE_0]ENCODER_SCALE
+
+net spindle-revs             <=   hm2_7i97.0.encoder.05.position
+net spindle-vel-fb-rps       <=   hm2_7i97.0.encoder.05.velocity
+net spindle-vel-fb-rpm       <=   hm2_7i97.0.encoder.05.velocity-rpm
+net spindle-index-enable     <=>  hm2_7i97.0.encoder.05.index-enable
+
+# ---setup spindle control signals---
+
+net spindle-vel-cmd-rps        <=  spindle.0.speed-out-rps
+net spindle-vel-cmd-rps-abs    <=  spindle.0.speed-out-rps-abs
+net spindle-vel-cmd-rpm        <=  spindle.0.speed-out
+net spindle-vel-cmd-rpm-abs    <=  spindle.0.speed-out-abs
+net spindle-enable             <=  spindle.0.on
+net spindle-cw                 <=  spindle.0.forward
+net spindle-ccw                <=  spindle.0.reverse
+net spindle-brake              <=  spindle.0.brake
+net spindle-revs               =>  spindle.0.revs
+net spindle-at-speed           =>  spindle.0.at-speed
+net spindle-vel-fb-rps         =>  spindle.0.speed-in
+net spindle-index-enable      <=>  spindle.0.index-enable
+
+# ---Setup spindle at speed signals---
+
+net spindle-vel-cmd-rps    =>  near.0.in1
+net spindle-vel-fb-rps         =>  near.0.in2
+net spindle-at-speed       <=  near.0.out
+setp near.0.scale 1.000000
+setp near.0.difference 3.333333
+
+
+#******************************
+# connect miscellaneous signals
+#******************************
+
+#  ---HALUI signals---
+
+net axis-select-x  halui.axis.x.select
+net jog-x-pos      halui.axis.x.plus
+net jog-x-neg      halui.axis.x.minus
+net jog-x-analog   halui.axis.x.analog
+net x-is-homed     halui.joint.0.is-homed
+net axis-select-y  halui.axis.y.select
+net jog-y-pos      halui.axis.y.plus
+net jog-y-neg      halui.axis.y.minus
+net jog-y-analog   halui.axis.y.analog
+net y-is-homed     halui.joint.1.is-homed
+net axis-select-z  halui.axis.z.select
+net jog-z-pos      halui.axis.z.plus
+net jog-z-neg      halui.axis.z.minus
+net jog-z-analog   halui.axis.z.analog
+net z-is-homed     halui.joint.2.is-homed
+net jog-selected-pos      halui.axis.selected.plus
+net jog-selected-neg      halui.axis.selected.minus
+net spindle-manual-cw     halui.spindle.0.forward
+net spindle-manual-ccw    halui.spindle.0.reverse
+net spindle-manual-stop   halui.spindle.0.stop
+net machine-is-on         halui.machine.is-on
+net jog-speed             halui.axis.jog-speed
+net MDI-mode              halui.mode.is-mdi
+
+#  ---coolant signals---
+
+net coolant-mist      <=  iocontrol.0.coolant-mist
+net coolant-flood     <=  iocontrol.0.coolant-flood
+
+#  ---probe signal---
+
+net probe-in     =>  motion.probe-input
+
+#  ---motion control signals---
+
+net in-position               <=  motion.in-position
+net machine-is-enabled        <=  motion.motion-enabled
+
+#  ---digital in / out signals---
+
+#  ---estop signals---
+
+#net estop-out     <=  iocontrol.0.user-enable-out
+#net estop-out     =>  iocontrol.0.emc-enable-in
+
+#  ---manual tool change signals---
+
+#net tool-change-request    <= iocontrol.0.tool-change
+#net tool-change-confirmed  => iocontrol.0.tool-changed
+#net tool-number            <= iocontrol.0.tool-prep-number
+
+#  ---Use external manual tool change dialog---
+
+#loadusr -W hal_manualtoolchange
+#net tool-change-request    =>  hal_manualtoolchange.change
+#net tool-change-confirmed  <=  hal_manualtoolchange.changed
+#net tool-number            =>  hal_manualtoolchange.number
+
+#  ---ignore tool prepare requests---
+#net tool-prepare-loopback   iocontrol.0.tool-prepare      =>  iocontrol.0.tool-prepared
+
+# Load Classicladder without GUI (can reload LADDER GUI in AXIS GUI
+
+#loadusr classicladder --nogui classicladder_21-6-24ANDREW3.clp
+
+
+loadusr classicladder --nogui mazak.clp

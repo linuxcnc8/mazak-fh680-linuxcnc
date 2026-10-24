@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(linuxcnc -v)",
+      "Bash(timeout 3 ping -c1 -W1 10.10.10.10)",
+      "Bash(echo \"rc=$?\")",
+      "Bash(halcmd show *)",
+      "Bash(grep -oE \"7i70\\\\.0\\\\.3\\\\.input-[0-9]+$\")",
+      "Bash(grep -oE \"[0-9]+$\")",
+      "Bash(sort -u -t- -k2 -n)",
+      "Bash(sed -n '/^\\\\[JOINT_3\\\\]/,/^\\\\[/p' 7i96.ini)",
+      "Bash(sed -n '/^\\\\[JOINT_4\\\\]/,/^\\\\[/p' 7i96.ini)",
+      "Bash(sed -n '/^\\\\[AXIS_A\\\\]/,/^\\\\[JOINT_3\\\\]/p' 7i96.ini)",
+      "Bash(sed -n '/^\\\\[AXIS_B\\\\]/,/^\\\\[JOINT_4\\\\]/p' 7i96.ini)",
+      "Bash(python3 -)",
+      "Bash(cp -a /home/cnc/linuxcnc/configs/mazak/7i96 /home/cnc/linuxcnc/configs/mazak/7i97)",
+      "Bash(mv 7i96.hal 7i97.hal)",
+      "Bash(mv 7i96.ini 7i97.ini)",
+      "Bash(rm -f \"7i96 \\(copy 1\\).hal\" 7i96.ini.bak)",
+      "Bash(cd *)",
+      "Bash(sed -i -e 's/^MACHINE = 7i96/MACHINE = 7i97/' -e 's|configs/7i96/subs/|configs/7i97/subs/|' -e 's|configs/7i96/sub_progs/|configs/7i97/sub_progs/|' -e 's/^CARD0=hm2_7i96\\\\.0/CARD0=hm2_7i97.0/' -e 's/^HALFILE = 7i96\\\\.hal/HALFILE = 7i97.hal/' -e 's|# +/-10V command on 7i77 analogout4, position feedback on encoder.04.|# +/-10V command on 7i97 AOUT4 \\(pwmgen.04\\), position feedback on encoder.04.|' -e 's|hm2_7i96\\\\.0\\\\.stepgen\\\\.03|hm2_7i97.0.stepgen.03|' 7i97.ini)",
+      "Bash(sed -i 's|logic in 7i96\\\\.hal are untouched|logic in 7i97.hal are untouched|; s|hm2_7i96\\\\.0\\\\.stepgen\\\\.03|hm2_7i97.0.stepgen.03|' spindle_stepgen.hal)",
+      "Bash(sed -i -e 's|^MACHINE = 7i97|MACHINE = mazakv2|' -e 's|configs/mazak/7i97/|configs/mazak/mazakv2/|g' -e 's|^HALFILE = 7i97\\\\.hal|HALFILE = mazakv2.hal|' mazakv2.ini)",
+      "Bash(sed -i 's|`7i97\\\\.hal`|`mazakv2.hal`|g; s|^# Mazak 7i97 + 7i76 pinout|# mazakv2 pinout — 7i97 + 7i76|' PINOUT.md)",
+      "Bash(sed -i 's|logic in 7i97\\\\.hal are untouched|logic in mazakv2.hal are untouched|' spindle_stepgen.hal)",
+      "Read(//home/cnc/linuxcnc/configs/**)",
+      "Read(//home/cnc/linuxcnc/configs/mazak/**)"
+    ]
+  }
+}

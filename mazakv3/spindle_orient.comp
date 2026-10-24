@@ -1,0 +1,374 @@
+component spindle_orient "Spindle speed + M19 orient for the Nietz AMD43 driven by step/dir";
+
+description """
+Sits between motion and hm2 stepgen.03 and owns the spindle drive.
+
+Normal running: stepgen in velocity mode, speed-cmd passes straight through,
+drive in speed mode.
+
+M19 (spindle.0.orient goes true):
+  1 STOP     ramp to zero in velocity mode, wait for the encoder to say stopped
+  2 SEARCH   on every M19 (always-index, default) or only the first: turn slowly with
+             index-enable armed until the encoder zeroes on the index
+  3 TO_POS   hold the stepgen where it is, switch it to position mode, flip the
+             drive's position-mode relay, wait mode-delay
+  4 MOVE     work out the move from the encoder angle and send exactly that
+             many pulses on a ramped profile
+  5 SETTLE   check the encoder; within tolerance for settle-time -> HOLD,
+             still off once stopped -> another correction move (max-retries)
+  6 HOLD     is-oriented true, drive holds position on its own encoder
+Drive enable (X1): on while the spindle runs and for the whole orient/hold;
+off (spindle free) once stopped after M5.
+M3/M4/M5 clears spindle.0.orient and spindle.0.locked -> RELEASE: flip the relay back to speed mode,
+wait mode-delay, stepgen back to velocity mode.
+
+Only valid where motor:spindle is 1:1 (high gear), because the index is on the
+motor.  orient-fault: 1 timeout, 2 too many retries, 3 machine dropped out.
+""";
+
+license "GPL";
+author "mazakv3";
+
+// --- from motion / machine ---
+pin in bit enable "machine on, motion.motion-enabled";
+pin in bit spindle_on "spindle.0.on";
+pin in float speed_cmd "spindle.0.speed-out-rps, rev/s, signed";
+pin in bit orient "spindle.0.orient";
+pin in bit locked "spindle.0.locked - motion swaps orient for locked once is-oriented is seen";
+pin in float orient_angle "spindle.0.orient-angle, degrees";
+pin in s32 orient_mode "spindle.0.orient-mode: 0 = M3 direction, 1 = M4 direction, 2 = shortest";
+
+// --- from the hardware ---
+pin in float position "spindle encoder position, revs";
+pin in float velocity "spindle encoder velocity, rev/s";
+pin io bit index_enable "spindle encoder index-enable";
+pin in float stepgen_fb "stepgen position-fb";
+
+// --- to the hardware / motion ---
+pin out float vel_cmd "stepgen velocity-cmd";
+pin out float pos_cmd "stepgen position-cmd";
+pin out bit control_type = 1 "stepgen control-type: 1 velocity, 0 position";
+pin out bit stepgen_enable "stepgen enable";
+pin out bit drive_enable "drive enable relay";
+pin out bit position_mode "drive position-mode relay, 0 = speed mode";
+pin out bit is_oriented "spindle.0.is-oriented";
+pin out bit holding "steady: locked in position mode and within hold-tolerance - toolchanger interlock";
+pin out s32 fault "spindle.0.orient-fault, 0 = ok";
+
+// --- status, for halshow ---
+pin out bit referenced "index found since load";
+pin out float angle "encoder angle from the index, degrees 0-360";
+pin out float error "orient target minus actual, degrees";
+pin out s32 state "0 idle 1 stop 2 search 3 search-stop 4 to-pos 5 move 6 settle 7 hold 8 release 9 unhold";
+pin out s32 retries;
+pin out float index_drift "degrees the count had drifted when the index was re-found (should be ~0)";
+
+// --- settings (pins so they can be changed live with setp) ---
+pin in float offset = 0 "degrees added to the M19 R angle: index -> tool key";
+pin in float pos_ratio = 1 "stepgen units per spindle rev while the drive is in position mode";
+pin in float search_vel = 1 "rev/s while looking for the index";
+pin in float move_vel = 1 "rev/s, top speed of an orient move";
+pin in float move_accel = 5 "rev/s^2 for an orient move";
+pin in float stopped_vel = 0.05 "rev/s, below this the spindle counts as stopped";
+pin in float tolerance = 0.5 "degrees either side of the target";
+pin in float settle_time = 0.2 "seconds in tolerance before is-oriented";
+pin in float retry_wait = 1.0 "seconds after a move before a correction move is tried";
+pin in float release_delay = 1.0 "seconds X1 stays on after the spindle has stopped (M5 / end of orient)";
+pin in float mode_delay = 0.2 "seconds to wait after flipping the mode relay";
+pin in float timeout = 15 "seconds for the whole orient";
+pin in s32 max_retries = 3 "correction moves before giving up";
+pin in float hold_tolerance = 2 "degrees the held spindle may be pushed off before holding drops";
+pin in bit always_index = 1 "re-find the index on every M19, not just the first";
+
+variable int st;
+variable int prev_orient;
+variable double timer;
+variable double total;
+variable double intol;
+variable double goal;
+variable double v;
+variable double target;
+variable int rundown;
+variable double prevpos;
+variable double stoptime;
+
+function _;
+;;
+
+#include <rtapi_math.h>
+
+#define ST_IDLE        0
+#define ST_STOP        1
+#define ST_SEARCH      2
+#define ST_SEARCH_STOP 3
+#define ST_TO_POS      4
+#define ST_MOVE        5
+#define ST_SETTLE      6
+#define ST_HOLD        7
+#define ST_RELEASE     8
+#define ST_UNHOLD      9
+
+/* wrap a fraction of a rev into -0.5 .. 0.5 */
+static double wrap_half(double r) {
+    r -= floor(r);
+    if (r >= 0.5) r -= 1.0;
+    return r;
+}
+
+/* start a move of delta revs from where the stepgen is commanded now */
+#define START_MOVE(delta) do { \
+    goal = pos_cmd + (delta) * pos_ratio; \
+    v = 0; \
+    st = ST_MOVE; \
+    timer = 0; \
+} while (0)
+
+FUNCTION(_) {
+    double dt = fperiod;
+    double frac, err;
+
+    frac = position - floor(position);
+    angle = frac * 360.0;
+    target = (orient_angle + offset) / 360.0;
+    target -= floor(target);
+    err = wrap_half(target - frac);
+    error = err * 360.0;
+
+    timer += dt;
+
+    /* machine off / estop: drop everything, but keep the index reference */
+    if (!enable) {
+        if (st != ST_IDLE && st != ST_HOLD && orient) fault = 3;
+        st = ST_IDLE;
+        control_type = 1;
+        vel_cmd = 0;
+        pos_cmd = stepgen_fb;
+        stepgen_enable = 0;
+        drive_enable = 0;
+        rundown = 0;
+        position_mode = 0;
+        is_oriented = 0;
+        holding = 0;
+        prev_orient = orient;
+        state = st;
+        prevpos = position;
+        return;
+    }
+
+    /* new M19 */
+    if (orient && !prev_orient && (st == ST_IDLE || st == ST_RELEASE || st == ST_HOLD)) {
+        fault = 0;
+        retries = 0;
+        total = 0;
+        is_oriented = 0;
+        if (st == ST_IDLE) {
+            st = ST_STOP;
+        } else if (always_index || !referenced) {
+            /* drive is in position mode - back to speed mode to search */
+            position_mode = 0;
+            st = ST_UNHOLD;
+        } else {
+            /* still in position mode from the last orient - go straight on */
+            position_mode = 1;
+            st = ST_TO_POS;
+        }
+        timer = 0;
+    }
+    prev_orient = orient;
+
+    /* orient dropped (M3/M4/M5, abort) while orienting or holding.  Once
+       is-oriented is seen, motion clears orient and sets locked instead, and
+       locked stays true until the next M3/M4/M5 - so hold on either. */
+    if (!orient && !locked && st != ST_IDLE && st != ST_RELEASE) {
+        is_oriented = 0;
+        if (control_type == 0) {
+            position_mode = 0;
+            st = ST_RELEASE;
+            timer = 0;
+        } else {
+            st = ST_IDLE;
+        }
+    }
+
+    if (st != ST_IDLE && st != ST_HOLD && st != ST_RELEASE) {
+        total += dt;
+        if (total > timeout) {
+            fault = 1;
+            index_enable = 0;
+            position_mode = 0;
+            st = ST_RELEASE;
+            timer = 0;
+        }
+    }
+
+    switch (st) {
+    case ST_IDLE:
+        control_type = 1;
+        pos_cmd = stepgen_fb;
+        vel_cmd = spindle_on ? speed_cmd : 0;
+        /* X1 on while the spindle is commanded on.  After M5 (or the end of
+           an orient) it stays on through the ramp-down, then drops once the
+           spindle has been stopped for release-delay so the spindle is free.  Only
+           spindle-on can set the latch - turning the spindle by hand never
+           switches X1 on (that used to chatter the relay). */
+        if (spindle_on) {
+            rundown = 1;
+            stoptime = 0;
+        } else if (rundown) {
+            if (fabs(velocity) < stopped_vel) stoptime += dt;
+            else stoptime = 0;
+            if (stoptime >= release_delay) rundown = 0;
+        }
+        drive_enable = spindle_on || rundown;
+        stepgen_enable = 1;
+        position_mode = 0;
+        break;
+
+    case ST_STOP:
+        control_type = 1;
+        drive_enable = 1;
+        stepgen_enable = 1;
+        vel_cmd = 0;
+        pos_cmd = stepgen_fb;
+        if (fabs(velocity) < stopped_vel && timer > 0.1) {
+            if (referenced && !always_index) {
+                st = ST_TO_POS;
+                position_mode = 1;
+                control_type = 0;
+            } else {
+                st = ST_SEARCH;
+                index_enable = 1;
+            }
+            timer = 0;
+        }
+        break;
+
+    case ST_SEARCH:
+        vel_cmd = (orient_mode == 1) ? -search_vel : search_vel;
+        pos_cmd = stepgen_fb;
+        if (!index_enable && timer > 0.01) {
+            /* the index should sit on a whole rev of the old count */
+            if (referenced) index_drift = wrap_half(prevpos) * 360.0;
+            referenced = 1;
+            vel_cmd = 0;
+            st = ST_SEARCH_STOP;
+            timer = 0;
+        }
+        break;
+
+    case ST_SEARCH_STOP:
+        vel_cmd = 0;
+        pos_cmd = stepgen_fb;
+        if (fabs(velocity) < stopped_vel && timer > 0.1) {
+            st = ST_TO_POS;
+            position_mode = 1;
+            control_type = 0;
+            timer = 0;
+        }
+        break;
+
+    case ST_TO_POS:
+        /* stepgen holds still in position mode while the relay and drive switch */
+        control_type = 0;
+        vel_cmd = 0;
+        position_mode = 1;
+        if (timer >= mode_delay) {
+            double d = target - frac;
+            if (fabs(err) * 360.0 <= tolerance || orient_mode == 2) {
+                d = err;
+            } else if (orient_mode == 1) {
+                d -= floor(d);  /* 0..1 */
+                d -= 1.0;       /* -1..0, M4 way */
+            } else {
+                d -= floor(d);  /* 0..1, M3 way */
+            }
+            START_MOVE(d);
+        }
+        break;
+
+    case ST_MOVE: {
+        double vmax = move_vel * pos_ratio;
+        double amax = move_accel * pos_ratio;
+        double rem = goal - pos_cmd;
+        double vstop = sqrt(2.0 * amax * fabs(rem));
+        double vw = (rem >= 0 ? 1.0 : -1.0) * (vstop < vmax ? vstop : vmax);
+        if (vw > v + amax * dt) vw = v + amax * dt;
+        if (vw < v - amax * dt) vw = v - amax * dt;
+        v = vw;
+        if (fabs(v * dt) >= fabs(rem) || fabs(rem) < 1e-9) {
+            pos_cmd = goal;
+            v = 0;
+            st = ST_SETTLE;
+            timer = 0;
+            intol = 0;
+        } else {
+            pos_cmd += v * dt;
+        }
+        break;
+    }
+
+    case ST_SETTLE:
+        if (fabs(error) <= tolerance) {
+            intol += dt;
+            if (intol >= settle_time) {
+                is_oriented = 1;
+                st = ST_HOLD;
+            }
+        } else {
+            intol = 0;
+            if (timer >= retry_wait && fabs(velocity) < stopped_vel) {
+                if (retries >= max_retries) {
+                    fault = 2;
+                    position_mode = 0;
+                    st = ST_RELEASE;
+                    timer = 0;
+                } else {
+                    retries++;
+                    START_MOVE(err);
+                }
+            }
+        }
+        break;
+
+    case ST_HOLD:
+        /* holding; is-oriented is cleared below once motion drops orient */
+        break;
+
+    case ST_UNHOLD:
+        /* new M19 while holding: relay back to speed mode, then search */
+        position_mode = 0;
+        vel_cmd = 0;
+        if (timer >= mode_delay) {
+            control_type = 1;
+            pos_cmd = stepgen_fb;
+            st = ST_STOP;
+            timer = 0;
+        }
+        break;
+
+    case ST_RELEASE:
+        /* relay back to speed mode, stepgen held until the drive has switched */
+        position_mode = 0;
+        vel_cmd = 0;
+        is_oriented = 0;
+        if (timer >= mode_delay) {
+            control_type = 1;
+            pos_cmd = stepgen_fb;
+            rundown = 1;    /* drop X1 once confirmed stopped */
+            stoptime = 0;
+            st = ST_IDLE;
+        }
+        break;
+    }
+
+    /* is-oriented only while motion has orient on.  Motion swaps orient for
+       locked as soon as it sees is-oriented; if is-oriented stayed true, the
+       next M19 (issued while locked) would be counted as done in the same
+       servo cycle, before this comp ever saw it. */
+    if (!orient) is_oriented = 0;
+
+    holding = enable && st == ST_HOLD && position_mode && fabs(error) <= hold_tolerance;
+
+    state = st;
+    prevpos = position;
+}

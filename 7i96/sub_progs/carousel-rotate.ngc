@@ -1,0 +1,21 @@
+O<carousel-rotate>sub
+m5
+g53 g0z0 
+g4p2
+(msg,hi3)
+m101
+m51 p0
+s30m4
+m66 p6 l2 q5
+m51 p1
+g4p.1
+m5
+g4p.2
+m101
+m64p7
+m66 p6 l2 q5
+m65p7
+
+(msg,carousel-rotate-success)
+
+O<carousel-rotate>endsub

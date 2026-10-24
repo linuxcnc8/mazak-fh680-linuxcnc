@@ -1,0 +1,75 @@
+#toolchanger hal file
+
+##############loading components##############
+loadrt atc 
+addf atc.0 servo-thread
+
+loadrt mag
+addf mag.0 servo-thread
+
+##############loading components##############
+
+######################ATC stuff#################
+
+
+net atc-tool-pos-1 atc.0.atc-tool-pos-1 hm2_7i96.0.7i70.0.3.input-11
+net atc-tool-pos-2 atc.0.atc-tool-pos-2 hm2_7i96.0.7i70.0.3.input-12
+net atc-home-switch atc.0.atc-home-switch
+
+net tool-sensor-clamped atc.0.tool-clamped hm2_7i96.0.7i70.0.3.input-18
+net tool-sensor-unclamped atc.0.tool-unclamped hm2_7i96.0.7i70.0.3.input-19
+
+net tool-change atc.0.atc-change-command iocontrol.0.tool-change
+net tool-changed atc.0.atc-changed iocontrol.0.tool-changed
+net tool-changed mag.0.atc-changed 
+
+######################ATC stuff#################
+
+
+#######outputs###########
+net spindle-tool-unclamp hm2_7i96.0.7i71.0.2.output-01 atc.0.tool-unclamp
+#limit3 stuff in 1extrajoint.hal
+#######outputs###########
+
+
+#############IO control stuff#########################
+
+
+net mag-fault classicladder.0.in-10 mag.0.toolchanger-faulted 
+
+
+
+
+
+###############magazine##############
+
+
+net J5:out mag.0.j5-limit3-out 
+
+####important########
+net joint-5-mag-position j5.limit3.in 
+####important########
+
+
+net tool-prep-pocket mag.0.iocontrol-prep-pocket-in iocontrol.0.tool-prep-pocket 
+net tool-prepare iocontrol.0.tool-prepare mag.0.tool-prepare 
+net tool-prepared iocontrol.0.tool-prepared mag.0.tool-prepared
+
+###############magazine##############
+
+
+#########shifter##############
+net mag-shifter-cmd-out mag.0.shifter-pos-cmd j7.limit3.in 
+net J7:out mag.0.j7-limit3-out
+
+net shifter-clamp mag.0.shifter-clamp hm2_7i96.0.7i71.0.2.output-09
+net shifter-unclamp mag.0.shifter-unclamp hm2_7i96.0.7i71.0.2.output-10
+net shifter-clamp-sens mag.0.shifter-clamped-sensor hm2_7i96.0.7i70.0.3.input-16
+net shifter-unclamp-sens mag.0.shifter-unclamped-sensor hm2_7i96.0.7i70.0.3.input-17
+
+#########shifter##############
+
+
+
+
+

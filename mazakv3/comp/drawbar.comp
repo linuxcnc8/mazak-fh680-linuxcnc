@@ -1,0 +1,104 @@
+component drawbar "Spindle drawbar: manual unclamp button + spindle-stopped interlock, OR'd with the atc";
+
+description """
+Sits between the atc and the drawbar valve (2026-10-24).
+
+Manual unclamp (manual, B+ for now, later a button at the spindle): HOLD to
+unclamp, let go to clamp.  It needs a fresh press, so a button already held
+when things become OK does nothing.  A press is refused (refused TRUE while
+held, refuse-reason) when:
+  1 machine off
+  2 spindle commanded on (spindle.0.on)
+  3 spindle turning: encoder over rpm-max, or the VFD step output over
+    step-vel-max, now or within the last stopped-time seconds
+  4 toolchanger busy (atc not idle)
+
+The atc's unclamp (atc-unclamp) needs the same "spindle stopped" check
+(reason 3) to START; the atc already checks the spindle is held at the
+orient angle.  If it isn't stopped the valve stays shut and the atc waits
+(and times out) as for a missing sensor.
+
+Once unclamped, nothing here clamps it again except the request going away
+(button released / atc done) - encoder noise can never snap the drawbar
+shut on a tool the arm is holding.
+
+While the drawbar is unclamped (valve on or unclamped sensor):
+  spindle-inhibit  TRUE  (-> spindle.0.inhibit: no spindle)
+  feed-inhibit     TRUE (-> motion.feed-inhibit: no axis motion or jogging
+                   with a loose tool - also after an atc fault with it open)
+""";
+
+pin in bit manual "manual unclamp button - hold";
+pin in bit atc_unclamp "atc.0.tool-unclamp";
+pin in bit machine_on "motion.motion-enabled";
+pin in bit spindle_on "spindle.0.on";
+pin in float step_vel "stepgen.03.velocity-fb, rev/s sent to the VFD";
+pin in float enc_rpm "encoder.05.velocity-rpm";
+pin in unsigned atc_state "atc.0.state - 0 is idle";
+pin in bit unclamped_sensor "drawbar unclamped sensor";
+
+pin in float rpm_max = 5 "encoder rpm counted as stopped";
+pin in float step_vel_max = 0.02 "VFD step rate (rev/s) counted as stopped";
+pin in float stopped_time = 0.5 "seconds the spindle must have been stopped";
+
+pin out bit unclamp "to the drawbar valve";
+pin out bit stopped "spindle stopped for stopped-time";
+pin out bit manual_ok "a press now would unclamp";
+pin out bit manual_active "unclamped by the button";
+pin out bit refused "button held but not allowed";
+pin out signed refuse_reason "1 machine off 2 spindle on 3 spindle turning 4 toolchanger busy";
+pin out bit spindle_inhibit "-> spindle.0.inhibit";
+pin out bit feed_inhibit "-> motion.feed-inhibit";
+
+variable double stop_timer;
+variable int prev_manual;
+
+function _;
+
+license "GPL";
+author "Claude for the Mazak v3 config, 2026-10-24";
+;;
+
+#include <rtapi_math.h>
+
+FUNCTION(_) {
+    int press = manual && !prev_manual;
+    int reason;
+    prev_manual = manual;
+
+    /* spindle stopped, continuously, for stopped-time */
+    if (!spindle_on && fabs(enc_rpm) <= rpm_max && fabs(step_vel) <= step_vel_max) {
+        if (stop_timer < stopped_time) stop_timer += fperiod;
+    } else {
+        stop_timer = 0;
+    }
+    stopped = stop_timer >= stopped_time;
+
+    if (!machine_on)          reason = 1;
+    else if (spindle_on)      reason = 2;
+    else if (!stopped)        reason = 3;
+    else if (atc_state != 0)  reason = 4;
+    else                      reason = 0;
+    manual_ok = reason == 0;
+
+    if (!unclamp) {
+        /* clamped: what may start an unclamp */
+        if (atc_unclamp && stopped) {
+            unclamp = 1;
+            manual_active = 0;
+        } else if (press && manual_ok) {
+            unclamp = 1;
+            manual_active = 1;
+        }
+    } else {
+        /* unclamped: stays open while it is still asked for */
+        if (manual_active && !manual) manual_active = 0;
+        if (!atc_unclamp && !manual_active) unclamp = 0;
+    }
+
+    refused = manual && !unclamp && reason != 0;
+    refuse_reason = refused ? reason : 0;
+
+    spindle_inhibit = unclamp || unclamped_sensor;
+    feed_inhibit = spindle_inhibit;
+}
